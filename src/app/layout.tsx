@@ -7,6 +7,7 @@ import SessionProvider from "@/components/SessionProvider";
 import Navbar from "@/components/Navbar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SmoothScroll from "@/components/SmoothScroll";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,19 @@ export default function RootLayout({
               {children}
             </ErrorBoundary>
           </SmoothScroll>
+          <Toaster
+            position="top-center"
+            theme="dark"
+            richColors
+            closeButton
+            toastOptions={{
+              style: {
+                background: "#18181b",
+                border: "1px solid #27272a",
+                color: "#fafafa",
+              },
+            }}
+          />
         </SessionProvider>
       </body>
     </html>

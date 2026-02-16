@@ -71,7 +71,24 @@ async function callOpenRouter(
     console.error(`[OpenRouter${agentName ? ` - ${agentName}` : ""}] ❌ API error (${elapsedMs}ms)`);
     console.error(`  Status: ${response.status} ${response.statusText}`);
     console.error(`  Response: ${errorData.slice(0, 500)}`);
-    throw new Error(`OpenRouter API error: ${errorData}`);
+
+    // Parse error to extract more details
+    let errorCode = "UNKNOWN";
+    let errorMessage = "API request failed";
+    try {
+      const parsed = JSON.parse(errorData);
+      errorCode = parsed.error?.code || response.status;
+      errorMessage = parsed.error?.message || parsed.error?.metadata?.raw || errorMessage;
+    } catch {
+      // If not JSON, use raw error
+      errorMessage = errorData;
+    }
+
+    // Create a structured error
+    const err = new Error(errorMessage) as Error & { code?: number | string; statusCode?: number };
+    err.code = errorCode;
+    err.statusCode = response.status;
+    throw err;
   }
 
   const data = await response.json();
@@ -224,10 +241,38 @@ Rules:
     try {
       console.log("\n--- AGENT 1: CATEGORIZER ---");
       agent1Result = await callOpenRouter(apiKey, CATEGORIZER_SYSTEM, categorizerPrompt, 4000, 0.5, "Categorizer");
-    } catch (err) {
+    } catch (err: any) {
       console.error("\n❌ Agent 1 (Categorizer) failed:", err);
+
+      // Check for rate limit or insufficient credits
+      if (err.statusCode === 429) {
+        return NextResponse.json(
+          {
+            error: "Rate limited",
+            errorType: "RATE_LIMIT",
+            message: err.message || "The AI service is temporarily rate-limited. Please try again in a few moments."
+          },
+          { status: 429 },
+        );
+      }
+
+      if (err.statusCode === 402 || err.code === 402) {
+        return NextResponse.json(
+          {
+            error: "Insufficient credits",
+            errorType: "NO_CREDITS",
+            message: "Sorry, we're out of credits :("
+          },
+          { status: 402 },
+        );
+      }
+
       return NextResponse.json(
-        { error: "AI analysis failed during categorization" },
+        {
+          error: "AI analysis failed during categorization",
+          errorType: "ANALYSIS_FAILED",
+          message: err.message || "AI analysis failed during categorization"
+        },
         { status: 500 },
       );
     }

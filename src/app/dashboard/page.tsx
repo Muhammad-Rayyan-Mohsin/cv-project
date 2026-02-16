@@ -18,6 +18,7 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type Step = "loading" | "repos" | "analyzing" | "results";
 
@@ -156,12 +157,43 @@ export default function Dashboard() {
 
       if (!res.ok) {
         const errData = await res.json();
+
+        // Handle specific error types with toasts
+        if (errData.errorType === "NO_CREDITS") {
+          toast.error("Sorry, we're out of credits :(", {
+            description: "The service has run out of API credits. Please try again later.",
+            duration: 5000,
+          });
+          setError(errData.message || "Out of credits");
+          setStep("repos");
+          return;
+        }
+
+        if (errData.errorType === "RATE_LIMIT") {
+          toast.error("Rate Limited", {
+            description: errData.message || "Too many requests. Please wait a moment and try again.",
+            duration: 5000,
+          });
+          setError(errData.message || "Rate limited");
+          setStep("repos");
+          return;
+        }
+
+        // Generic error
+        toast.error("Analysis Failed", {
+          description: errData.message || "Something went wrong. Please try again.",
+          duration: 4000,
+        });
         throw new Error(errData.error || "Analysis failed");
       }
 
       const data = await res.json();
       setAnalysis(data);
       setStep("results");
+      toast.success("Analysis Complete!", {
+        description: `Generated ${data.roles?.length || 0} tailored CVs for different roles.`,
+        duration: 3000,
+      });
       // Refresh history and usage after new analysis
       fetchHistory();
       fetchUsage();
@@ -647,13 +679,13 @@ export default function Dashboard() {
             AI Agent is Analyzing...
           </h2>
           <p className="text-zinc-500 text-center max-w-md text-sm leading-relaxed">
-            Gemini 3 Flash is reviewing your {selectedRepos.size} repositories,
+            Our AI is reviewing your {selectedRepos.size} repositories,
             identifying career roles, and generating tailored CVs. This may take
             a minute.
           </p>
           <div className="flex items-center gap-2.5 mt-8 text-sm text-zinc-600">
             <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-            Processing with OpenRouter AI
+            Processing with AI
           </div>
         </motion.div>
       )}

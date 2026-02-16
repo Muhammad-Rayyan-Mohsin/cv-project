@@ -127,7 +127,7 @@ export default function Home() {
               AI-Powered Analysis
             </h3>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Gemini 3 Flash intelligently categorizes your projects into career
+              Our AI intelligently categorizes your projects into career
               roles like ML Engineer, Full-Stack, DevOps, and more.
             </p>
           </motion.div>
