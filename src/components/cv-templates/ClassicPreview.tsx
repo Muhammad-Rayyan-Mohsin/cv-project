@@ -21,7 +21,7 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
 
   return (
     <div className="overflow-x-auto -mx-4 sm:mx-0">
-      <div className="bg-white text-black rounded-lg p-4 sm:p-8 shadow-lg max-w-[210mm] mx-auto text-[9pt] sm:text-[10.5pt] leading-[1.35] font-[system-ui] min-w-[320px]">
+      <div className="bg-white text-black rounded-lg p-4 sm:p-8 shadow-lg max-w-[210mm] mx-auto text-[9pt] sm:text-[10.5pt] leading-[1.35] font-sans min-w-[320px]">
         {/* Header */}
         {pd.fullName && (
           <div className="mb-3 pb-2 border-b border-gray-300 text-center">
