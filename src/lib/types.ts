@@ -31,10 +31,37 @@ export interface CareerRole {
   cv: string;
 }
 
+export interface TokenUsage {
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 export interface AnalysisResult {
   roles: CareerRole[];
   summary: string;
   sessionId?: string | null;
+  tokenUsage?: TokenUsage;
+}
+
+export interface UsageRecord {
+  id: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUsd: number;
+  createdAt: string;
+}
+
+export interface UsageStats {
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  totalCostUsd: number;
+  totalRequests: number;
+  records: UsageRecord[];
 }
 
 export interface HistorySession {

@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback } from "react";
-import { RepoDetail, AnalysisResult, HistorySession } from "@/lib/types";
+import { RepoDetail, AnalysisResult, HistorySession, UsageStats } from "@/lib/types";
 import RepoCard from "@/components/RepoCard";
 import CVDisplay from "@/components/CVDisplay";
 
@@ -22,6 +22,10 @@ export default function Dashboard() {
   const [history, setHistory] = useState<HistorySession[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Usage state
+  const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [showUsage, setShowUsage] = useState(false);
 
   const fetchRepos = useCallback(async () => {
     setStep("loading");
@@ -60,12 +64,25 @@ export default function Dashboard() {
     }
   }, []);
 
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch("/api/usage");
+      if (res.ok) {
+        const data = await res.json();
+        setUsage(data);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
   useEffect(() => {
     if (status === "authenticated") {
       fetchRepos();
       fetchHistory();
+      fetchUsage();
     }
-  }, [status, fetchRepos, fetchHistory]);
+  }, [status, fetchRepos, fetchHistory, fetchUsage]);
 
   const toggleRepo = (id: number) => {
     setSelectedRepos((prev) => {
@@ -109,8 +126,9 @@ export default function Dashboard() {
       const data = await res.json();
       setAnalysis(data);
       setStep("results");
-      // Refresh history after new analysis
+      // Refresh history and usage after new analysis
       fetchHistory();
+      fetchUsage();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Analysis failed");
       setStep("repos");
@@ -239,22 +257,41 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* History Toggle */}
-        {history.length > 0 && (
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              showHistory
-                ? "bg-emerald-400 text-gray-900"
-                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-            }`}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            History ({history.length})
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Usage Toggle */}
+          {usage && usage.totalRequests > 0 && (
+            <button
+              onClick={() => { setShowUsage(!showUsage); setShowHistory(false); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                showUsage
+                  ? "bg-cyan-400 text-gray-900"
+                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Usage
+            </button>
+          )}
+
+          {/* History Toggle */}
+          {history.length > 0 && (
+            <button
+              onClick={() => { setShowHistory(!showHistory); setShowUsage(false); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                showHistory
+                  ? "bg-emerald-400 text-gray-900"
+                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History ({history.length})
+            </button>
+          )}
+        </div>
       </div>
 
       {/* History Panel */}
@@ -314,6 +351,97 @@ export default function Dashboard() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Usage Panel */}
+      {showUsage && usage && (
+        <div className="mb-8 bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-700">
+            <h2 className="text-lg font-semibold text-white">LLM Token Usage</h2>
+            <p className="text-sm text-gray-400 mt-1">
+              Cumulative usage across all analyses
+            </p>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4">
+            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Requests</p>
+              <p className="text-2xl font-bold text-white mt-1">{usage.totalRequests}</p>
+            </div>
+            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Tokens</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {usage.totalTokens.toLocaleString()}
+              </p>
+            </div>
+            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Prompt / Completion</p>
+              <p className="text-sm font-medium text-gray-300 mt-1">
+                <span className="text-cyan-400">{usage.totalPromptTokens.toLocaleString()}</span>
+                {" / "}
+                <span className="text-emerald-400">{usage.totalCompletionTokens.toLocaleString()}</span>
+              </p>
+            </div>
+            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Estimated Cost</p>
+              <p className="text-2xl font-bold text-emerald-400 mt-1">
+                ${usage.totalCostUsd.toFixed(4)}
+              </p>
+            </div>
+          </div>
+
+          {/* Per-request breakdown */}
+          {usage.records.length > 0 && (
+            <div className="border-t border-gray-700/50">
+              <div className="px-4 py-3">
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                  Request Log
+                </h3>
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-900/30 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Date</th>
+                      <th className="px-4 py-2 text-left">Model</th>
+                      <th className="px-4 py-2 text-right">Prompt</th>
+                      <th className="px-4 py-2 text-right">Completion</th>
+                      <th className="px-4 py-2 text-right">Total</th>
+                      <th className="px-4 py-2 text-right">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700/30">
+                    {usage.records.map((record) => (
+                      <tr key={record.id} className="text-gray-300 hover:bg-gray-700/20">
+                        <td className="px-4 py-2 text-gray-400">
+                          {formatDate(record.createdAt)}
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">
+                            {record.model.split("/").pop()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-right text-cyan-400">
+                          {record.promptTokens.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-2 text-right text-emerald-400">
+                          {record.completionTokens.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-2 text-right font-medium">
+                          {record.totalTokens.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          ${record.costUsd.toFixed(4)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -450,6 +578,28 @@ export default function Dashboard() {
               Back to repos
             </button>
           </div>
+
+          {/* Token usage for this analysis */}
+          {analysis.tokenUsage && (
+            <div className="mb-6 flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>
+                  {analysis.tokenUsage.totalTokens.toLocaleString()} tokens
+                </span>
+              </div>
+              <span className="text-gray-700">|</span>
+              <span>
+                <span className="text-cyan-400/70">{analysis.tokenUsage.promptTokens.toLocaleString()}</span> in /
+                {" "}
+                <span className="text-emerald-400/70">{analysis.tokenUsage.completionTokens.toLocaleString()}</span> out
+              </span>
+              <span className="text-gray-700">|</span>
+              <span>{analysis.tokenUsage.model.split("/").pop()}</span>
+            </div>
+          )}
 
           <CVDisplay roles={analysis.roles} />
         </div>

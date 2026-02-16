@@ -5,6 +5,7 @@ import { RepoDetail } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_GENERATION_URL = "https://openrouter.ai/api/v1/generation";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -121,6 +122,12 @@ Rules:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
+    // Capture token usage from OpenRouter response
+    const usageData = data.usage || {};
+    const generationId = data.id;
+    const modelUsed =
+      data.model || process.env.OPENROUTER_MODEL || "google/gemini-3-flash-preview";
+
     if (!content) {
       return NextResponse.json(
         { error: "No response from AI" },
@@ -202,13 +209,50 @@ Rules:
 
           await supabase.from("generated_cvs").insert(cvInserts);
         }
+
+        // Track token usage — fetch exact cost from OpenRouter generation API
+        let estimatedCost = 0;
+        if (generationId && apiKey) {
+          try {
+            const genRes = await fetch(
+              `${OPENROUTER_GENERATION_URL}?id=${generationId}`,
+              {
+                headers: { Authorization: `Bearer ${apiKey}` },
+              }
+            );
+            if (genRes.ok) {
+              const genData = await genRes.json();
+              estimatedCost = genData.data?.total_cost ?? 0;
+            }
+          } catch {
+            // Fall back to 0 cost if generation query fails
+          }
+        }
+
+        await supabase.from("token_usage").insert({
+          user_id: session.profileId,
+          session_id: sessionId,
+          model: modelUsed,
+          prompt_tokens: usageData.prompt_tokens ?? 0,
+          completion_tokens: usageData.completion_tokens ?? 0,
+          total_tokens: usageData.total_tokens ?? 0,
+          estimated_cost_usd: estimatedCost,
+        });
       } catch (err) {
         // Log but don't fail the request — the user still gets their CVs
         console.error("Failed to save analysis to Supabase:", err);
       }
     }
 
-    return NextResponse.json({ ...result, sessionId });
+    // Include token usage in the response
+    const tokenUsage = {
+      model: modelUsed,
+      promptTokens: usageData.prompt_tokens ?? 0,
+      completionTokens: usageData.completion_tokens ?? 0,
+      totalTokens: usageData.total_tokens ?? 0,
+    };
+
+    return NextResponse.json({ ...result, sessionId, tokenUsage });
   } catch (error) {
     console.error("Analysis error:", error);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
+  --background: #000000;
   --foreground: #ededed;
 }
 
@@ -18,6 +18,50 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Ambient Glow Effects */
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.ambient-glow-purple {
+  background: radial-gradient(circle, #a855f7, #d946ef);
+}
+
+.ambient-glow-blue {
+  background: radial-gradient(circle, #3b82f6, #6366f1);
+}
+
+.ambient-glow-orange {
+  background: radial-gradient(circle, #f97316, #f59e0b);
+}
+
+/* Gradient Text */
+.gradient-text-purple {
+  background: linear-gradient(to right, #a855f7, #d946ef);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(to right, #f97316, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(to right, #3b82f6, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated Gradient */
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -26,4 +70,91 @@ body {
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+}
+
+/* Subtle shimmer for cards on hover */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.card-shimmer:hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+  pointer-events: none;
+}
+
+/* Prose overrides for dark mode CV content */
+.prose-premium h1,
+.prose-premium h2,
+.prose-premium h3,
+.prose-premium h4 {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.prose-premium p,
+.prose-premium li {
+  color: #a1a1aa;
+}
+
+.prose-premium a {
+  color: #a855f7;
+}
+
+.prose-premium strong {
+  color: #e4e4e7;
+}
+
+.prose-premium code {
+  color: #d946ef;
+  background: rgba(168, 85, 247, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose-premium hr {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.prose-premium ul {
+  list-style-type: disc;
+}
+
+.prose-premium blockquote {
+  border-left-color: #a855f7;
+  color: #71717a;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

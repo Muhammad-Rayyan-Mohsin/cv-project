@@ -128,6 +128,57 @@ export type Database = {
         }
         Relationships: []
       }
+      token_usage: {
+        Row: {
+          completion_tokens: number
+          created_at: string
+          estimated_cost_usd: number
+          id: string
+          model: string
+          prompt_tokens: number
+          session_id: string | null
+          total_tokens: number
+          user_id: string
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string
+          estimated_cost_usd?: number
+          id?: string
+          model: string
+          prompt_tokens?: number
+          session_id?: string | null
+          total_tokens?: number
+          user_id: string
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string
+          estimated_cost_usd?: number
+          id?: string
+          model?: string
+          prompt_tokens?: number
+          session_id?: string | null
+          total_tokens?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_usage_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
