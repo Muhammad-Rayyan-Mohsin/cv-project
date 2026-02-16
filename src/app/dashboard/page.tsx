@@ -224,7 +224,7 @@ export default function Dashboard() {
   if (status === "loading") {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="w-12 h-12 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -251,7 +251,7 @@ export default function Dashboard() {
                   <div
                     className={`w-12 h-0.5 rounded-full transition-colors ${
                       isActive
-                        ? "bg-gradient-to-r from-purple-500 to-fuchsia-500"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500"
                         : "bg-zinc-800"
                     }`}
                   />
@@ -260,7 +260,7 @@ export default function Dashboard() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+                        ? "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]"
                         : "bg-zinc-900 text-zinc-600 border border-white/5"
                     }`}
                   >
@@ -292,7 +292,7 @@ export default function Dashboard() {
               onClick={() => { setShowUsage(!showUsage); setShowHistory(false); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 showUsage
-                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                   : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
@@ -309,7 +309,7 @@ export default function Dashboard() {
               onClick={() => { setShowHistory(!showHistory); setShowUsage(false); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 showHistory
-                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                   : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
@@ -337,7 +337,7 @@ export default function Dashboard() {
             </div>
             {loadingHistory ? (
               <div className="p-8 flex justify-center">
-                <div className="w-8 h-8 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
               </div>
             ) : (
               <div className="divide-y divide-white/5">
@@ -365,7 +365,7 @@ export default function Dashboard() {
                         {historySession.generated_cvs.map((cv) => (
                           <span
                             key={cv.id}
-                            className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20"
+                            className="text-xs bg-orange-500/10 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/20"
                           >
                             {cv.role_title}
                           </span>
@@ -422,12 +422,12 @@ export default function Dashboard() {
                 <p className="text-sm font-medium text-zinc-300 mt-2">
                   <span className="text-blue-400">{usage.totalPromptTokens.toLocaleString()}</span>
                   {" / "}
-                  <span className="text-purple-400">{usage.totalCompletionTokens.toLocaleString()}</span>
+                  <span className="text-orange-400">{usage.totalCompletionTokens.toLocaleString()}</span>
                 </p>
               </div>
               <div className="rounded-xl bg-black p-4 border border-white/5">
                 <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Estimated Cost</p>
-                <p className="text-2xl font-extrabold gradient-text-purple mt-1 tracking-tight">
+                <p className="text-2xl font-extrabold gradient-text-warm mt-1 tracking-tight">
                   ${usage.totalCostUsd.toFixed(4)}
                 </p>
               </div>
@@ -467,7 +467,7 @@ export default function Dashboard() {
                           <td className="px-5 py-2.5 text-right text-blue-400">
                             {record.promptTokens.toLocaleString()}
                           </td>
-                          <td className="px-5 py-2.5 text-right text-purple-400">
+                          <td className="px-5 py-2.5 text-right text-orange-400">
                             {record.completionTokens.toLocaleString()}
                           </td>
                           <td className="px-5 py-2.5 text-right font-medium text-white">
@@ -512,9 +512,9 @@ export default function Dashboard() {
           className="flex flex-col items-center justify-center py-24"
         >
           <div className="relative mb-8">
-            <div className="w-16 h-16 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+            <div className="w-16 h-16 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+              <Sparkles className="w-6 h-6 text-orange-400" strokeWidth={1.5} />
             </div>
           </div>
           <p className="text-zinc-300 text-lg font-medium">{fetchProgress}</p>
@@ -560,7 +560,7 @@ export default function Dashboard() {
                 whileTap={{ scale: 0.97 }}
                 onClick={analyzeRepos}
                 disabled={selectedRepos.size === 0}
-                className="ml-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(168,85,247,0.15)] disabled:shadow-none text-sm"
+                className="ml-4 bg-gradient-to-r from-orange-500 to-amber-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(249,115,22,0.15)] disabled:shadow-none text-sm"
               >
                 <Cpu className="w-4 h-4" strokeWidth={2} />
                 Analyze with AI ({selectedRepos.size})
@@ -610,10 +610,10 @@ export default function Dashboard() {
         >
           <div className="relative mb-10">
             {/* Outer glow ring */}
-            <div className="absolute inset-0 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
-            <div className="relative w-24 h-24 border-2 border-zinc-800 border-t-purple-500 border-r-fuchsia-500 rounded-full animate-spin" />
+            <div className="absolute inset-0 rounded-full bg-orange-500/20 blur-xl animate-pulse" />
+            <div className="relative w-24 h-24 border-2 border-zinc-800 border-t-orange-500 border-r-amber-500 rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Cpu className="w-8 h-8 text-purple-400" strokeWidth={1.5} />
+              <Cpu className="w-8 h-8 text-orange-400" strokeWidth={1.5} />
             </div>
           </div>
           <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">
@@ -625,7 +625,7 @@ export default function Dashboard() {
             a minute.
           </p>
           <div className="flex items-center gap-2.5 mt-8 text-sm text-zinc-600">
-            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
             Processing with OpenRouter AI
           </div>
         </motion.div>
@@ -669,7 +669,7 @@ export default function Dashboard() {
               <span>
                 <span className="text-blue-400/70">{analysis.tokenUsage.promptTokens.toLocaleString()}</span> in /
                 {" "}
-                <span className="text-purple-400/70">{analysis.tokenUsage.completionTokens.toLocaleString()}</span> out
+                <span className="text-orange-400/70">{analysis.tokenUsage.completionTokens.toLocaleString()}</span> out
               </span>
               <span className="text-zinc-800">|</span>
               <span>{analysis.tokenUsage.model.split("/").pop()}</span>

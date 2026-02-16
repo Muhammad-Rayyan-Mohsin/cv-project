@@ -45,7 +45,7 @@ export default function CVDisplay({ roles }: { roles: CareerRole[] }) {
             onClick={() => setActiveRole(i)}
             className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
               i === activeRole
-                ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                 : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
             }`}
           >
@@ -98,7 +98,7 @@ export default function CVDisplay({ roles }: { roles: CareerRole[] }) {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleDownload}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white px-3 py-2 rounded-full text-sm font-medium transition-colors"
+                  className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-3 py-2 rounded-full text-sm font-medium transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" strokeWidth={2} />
                   Download
@@ -116,7 +116,7 @@ export default function CVDisplay({ roles }: { roles: CareerRole[] }) {
               {current.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="bg-purple-500/10 text-purple-300 px-3 py-1 rounded-full text-xs font-medium border border-purple-500/20"
+                  className="bg-orange-500/10 text-orange-300 px-3 py-1 rounded-full text-xs font-medium border border-orange-500/20"
                 >
                   {skill}
                 </span>

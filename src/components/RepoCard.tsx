@@ -46,7 +46,7 @@ export default function RepoCard({
       whileTap={{ scale: 0.98 }}
       className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-200 card-shimmer ${
         selected
-          ? "border border-purple-500/40 bg-purple-500/5 shadow-[0_0_30px_rgba(168,85,247,0.08)]"
+          ? "border border-orange-500/40 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.08)]"
           : "border border-white/5 bg-zinc-950 hover:border-white/10"
       }`}
     >
@@ -55,7 +55,7 @@ export default function RepoCard({
         <div
           className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
             selected
-              ? "bg-gradient-to-br from-purple-500 to-fuchsia-500"
+              ? "bg-gradient-to-br from-orange-500 to-amber-500"
               : "border border-white/10 bg-zinc-900"
           }`}
         >

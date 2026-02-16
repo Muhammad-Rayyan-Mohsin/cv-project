@@ -34,9 +34,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Ambient Glows */}
-        <div className="ambient-glow ambient-glow-purple w-[600px] h-[600px] -top-40 -left-40" />
-        <div className="ambient-glow ambient-glow-blue w-[500px] h-[500px] top-20 right-0" />
-        <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] bottom-0 left-1/3" />
+        <div className="ambient-glow ambient-glow-orange w-[600px] h-[600px] -top-40 -left-40" />
+        <div className="ambient-glow ambient-glow-purple w-[400px] h-[400px] top-20 right-0 opacity-10" />
+        <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] bottom-0 right-1/4 opacity-10" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32">
           <motion.div
@@ -48,7 +48,7 @@ export default function Home() {
             {/* Badge */}
             <motion.div variants={fadeUp} className="mb-8">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-1.5 text-xs font-medium text-zinc-400">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" strokeWidth={2} />
+                <Sparkles className="w-3.5 h-3.5 text-orange-400" strokeWidth={2} />
                 Powered by AI + GitHub
               </span>
             </motion.div>
@@ -59,7 +59,7 @@ export default function Home() {
               className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none tracking-tight mb-6"
             >
               Turn Your GitHub Into{" "}
-              <span className="gradient-text-purple">Career-Ready CVs</span>
+              <span className="gradient-text-warm">Career-Ready CVs</span>
             </motion.h1>
 
             {/* Subtitle */}
@@ -75,13 +75,13 @@ export default function Home() {
             {/* CTA */}
             <motion.div variants={fadeUp}>
               {status === "loading" ? (
-                <div className="inline-block w-10 h-10 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+                <div className="inline-block w-10 h-10 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
               ) : (
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => signIn("github")}
-                  className="group inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-zinc-100 transition-all shadow-[0_0_60px_rgba(168,85,247,0.15)]"
+                  className="group inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-zinc-100 transition-all shadow-[0_0_60px_rgba(249,115,22,0.15)]"
                 >
                   <Github className="w-5 h-5" strokeWidth={2} />
                   Sign in with GitHub
@@ -107,10 +107,10 @@ export default function Home() {
             variants={fadeUp}
             className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 md:col-span-2 group card-shimmer"
           >
-            <div className="ambient-glow ambient-glow-purple w-[200px] h-[200px] -top-20 -right-20 opacity-10" />
+            <div className="ambient-glow ambient-glow-orange w-[200px] h-[200px] -top-20 -right-20 opacity-10" />
             <div className="relative">
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6">
-                <Github className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6">
+                <Github className="w-6 h-6 text-orange-400" strokeWidth={1.5} />
               </div>
               <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
                 Deep GitHub Integration
@@ -162,8 +162,8 @@ export default function Home() {
             variants={fadeUp}
             className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
           >
-            <div className="w-12 h-12 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center mb-6">
-              <Zap className="w-6 h-6 text-fuchsia-400" strokeWidth={1.5} />
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
+              <Zap className="w-6 h-6 text-amber-400" strokeWidth={1.5} />
             </div>
             <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
               Blazing Fast
