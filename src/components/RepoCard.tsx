@@ -43,7 +43,7 @@ export default function RepoCard({
       onClick={onToggle}
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.99 }}
-      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-200 ${
+      className={`relative h-full flex flex-col p-5 rounded-2xl cursor-pointer transition-all duration-200 ${
         selected
           ? "ring-1 ring-orange-500/30 bg-orange-500/[0.03]"
           : "border border-white/[0.06] bg-zinc-950 hover:border-white/10"
@@ -58,7 +58,7 @@ export default function RepoCard({
         </div>
       )}
 
-      <div className={selected ? "pr-8" : ""}>
+      <div className={`flex flex-col flex-1 ${selected ? "pr-8" : ""}`}>
         {/* Title row */}
         <div className="flex items-center gap-2 mb-1.5">
           <h3 className="text-white font-medium text-[15px] tracking-tight">
@@ -71,10 +71,13 @@ export default function RepoCard({
 
         {/* Description - only render if exists */}
         {repo.description && (
-          <p className="text-zinc-500 text-sm mb-3 line-clamp-2 leading-relaxed">
+          <p className="text-zinc-500 text-sm line-clamp-2 leading-relaxed">
             {repo.description}
           </p>
         )}
+
+        {/* Spacer to push footer down */}
+        <div className="flex-1" />
 
         {/* Footer: languages + stars */}
         <div className="flex items-center justify-between mt-3">

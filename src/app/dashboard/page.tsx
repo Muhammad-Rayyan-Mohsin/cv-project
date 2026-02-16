@@ -575,7 +575,7 @@ export default function Dashboard() {
             variants={staggerContainer}
           >
             {repos.map((repo) => (
-              <motion.div key={repo.id} variants={fadeUp}>
+              <motion.div key={repo.id} variants={fadeUp} className="h-full">
                 <RepoCard
                   repo={repo}
                   selected={selectedRepos.has(repo.id)}
