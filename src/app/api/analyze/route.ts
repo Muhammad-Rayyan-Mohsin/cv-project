@@ -5,6 +5,8 @@ import { RepoDetail } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { structuredCvToMarkdown, createEmptyPersonalDetails } from "@/lib/cv-utils";
 import { StructuredCV, ExperienceEntry } from "@/lib/cv-types";
+import { cache, CacheKeys } from "@/lib/cache";
+import { parseAnalysisXml } from "@/lib/xml-parser";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_GENERATION_URL = "https://openrouter.ai/api/v1/generation";
@@ -59,52 +61,72 @@ Your analysis should be thorough and intelligent:
 - A single project can appear under multiple roles if relevant
 - Generate professional, ATS-friendly structured CV data tailored to each role
 
-You MUST respond with valid JSON only, no markdown, no code fences.`;
+You MUST respond with valid XML only. No markdown, no code fences, no prose outside the XML.`;
 
   const userPrompt = `Analyze the following GitHub profile and repositories, then categorize them into career roles and generate a structured CV for each role.
 
-**User:** ${userName || "GitHub User"}
-**Bio:** ${userBio || "Not provided"}
+User: ${userName || "GitHub User"}
+Bio: ${userBio || "Not provided"}
 
-**Repositories (${projectSummaries.length} total):**
+Repositories (${projectSummaries.length} total):
 ${JSON.stringify(projectSummaries, null, 2)}
 
-Respond with the following JSON structure:
-{
-  "summary": "A brief overview of the developer's overall profile and strengths",
-  "roles": [
-    {
-      "role": "Role Title (e.g., Machine Learning Engineer)",
-      "description": "Why this role fits based on the projects",
-      "matchingRepoNames": ["repo1", "repo2"],
-      "skills": ["skill1", "skill2", "skill3"],
-      "structuredCv": {
-        "summary": "A 2-3 sentence professional summary tailored for this specific role, highlighting key strengths and experience areas",
-        "skills": [
-          { "category": "Languages", "items": ["Python", "TypeScript"] },
-          { "category": "Frameworks & Libraries", "items": ["React", "TensorFlow"] },
-          { "category": "Tools & Platforms", "items": ["Docker", "AWS", "Git"] }
-        ],
-        "experience": [
-          {
-            "title": "Project Name",
-            "organization": "Personal Project",
-            "startDate": "2023",
-            "endDate": "Present",
-            "bullets": [
-              "Built X using Y, resulting in Z improvement",
-              "Implemented A that handled B concurrent users"
-            ],
-            "technologies": ["React", "Node.js", "PostgreSQL"],
-            "repoUrl": "https://github.com/user/repo"
-          }
-        ],
-        "education": [],
-        "certifications": []
-      }
-    }
-  ]
-}
+Respond with the following XML structure exactly:
+
+<analysis>
+  <summary>A brief overview of the developer's overall profile and strengths</summary>
+  <roles>
+    <role>
+      <title>Role Title (e.g., Machine Learning Engineer)</title>
+      <description>Why this role fits based on the projects</description>
+      <matchingRepoNames>
+        <repo>repo1</repo>
+        <repo>repo2</repo>
+      </matchingRepoNames>
+      <skills>
+        <skill>skill1</skill>
+        <skill>skill2</skill>
+        <skill>skill3</skill>
+      </skills>
+      <structuredCv>
+        <summary>A 2-3 sentence professional summary tailored for this specific role</summary>
+        <skillCategories>
+          <category>
+            <name>Languages</name>
+            <items>
+              <item>Python</item>
+              <item>TypeScript</item>
+            </items>
+          </category>
+          <category>
+            <name>Frameworks &amp; Libraries</name>
+            <items>
+              <item>React</item>
+              <item>TensorFlow</item>
+            </items>
+          </category>
+        </skillCategories>
+        <experience>
+          <entry>
+            <title>Project Name</title>
+            <organization>Personal Project</organization>
+            <startDate>2023</startDate>
+            <endDate>Present</endDate>
+            <bullets>
+              <bullet>Built X using Y, resulting in Z improvement</bullet>
+              <bullet>Implemented A that handled B concurrent users</bullet>
+            </bullets>
+            <technologies>
+              <tech>React</tech>
+              <tech>Node.js</tech>
+            </technologies>
+            <repoUrl>https://github.com/user/repo</repoUrl>
+          </entry>
+        </experience>
+      </structuredCv>
+    </role>
+  </roles>
+</analysis>
 
 Rules:
 - Create between 2-6 roles depending on the diversity of projects
@@ -114,10 +136,11 @@ Rules:
 - Focus on achievements and impact, not just descriptions
 - Use strong action verbs and quantify where possible (users, performance, scale)
 - Create 2-4 skill categories with relevant items for each role
-- Leave education and certifications as empty arrays (user will fill these from their profile)
+- Do NOT include education or certifications in the XML (user fills these from their profile)
 - Make each CV distinct and optimized for the specific role
 - The experience entries should map to the matching repositories
-- Include the repo URL in each experience entry's repoUrl field`;
+- Include the repo URL in each experience entry's repoUrl element
+- Escape special XML characters: & as &amp; < as &lt; > as &gt;`;
 
   try {
     const response = await fetch(OPENROUTER_API_URL, {
@@ -164,16 +187,16 @@ Rules:
       );
     }
 
-    // Parse the JSON response - strip potential markdown code fences
-    let parsed;
+    // Parse the XML response
+    let parsed: { summary: string; roles: any[] };
     try {
       const cleaned = content
-        .replace(/```json\n?/g, "")
+        .replace(/```xml\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse AI response:", content);
+      parsed = parseAnalysisXml(cleaned);
+    } catch (err) {
+      console.error("Failed to parse AI XML response:", err, content);
       return NextResponse.json(
         { error: "Failed to parse AI response", raw: content },
         { status: 500 }
@@ -226,7 +249,7 @@ Rules:
         // Generate markdown from structured CV or use legacy cv field
         const cvMarkdown = structuredCv
           ? structuredCvToMarkdown(structuredCv)
-          : role.cv || "";
+          : "";
 
         return {
           role: role.role,
@@ -308,6 +331,10 @@ Rules:
           total_tokens: usageData.total_tokens ?? 0,
           estimated_cost_usd: estimatedCost,
         });
+
+        // Invalidate history and usage caches so next fetch picks up new data
+        cache.delete(CacheKeys.history(session.profileId!));
+        cache.delete(CacheKeys.usage(session.profileId!));
       } catch (err) {
         // Log but don't fail the request — the user still gets their CVs
         console.error("Failed to save analysis to Supabase:", err);

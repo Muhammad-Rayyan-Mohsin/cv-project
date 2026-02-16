@@ -2,11 +2,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || !session.profileId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const cacheKey = CacheKeys.usage(session.profileId);
+
+  // Return cached data if available
+  const cached = cache.get<Record<string, unknown>>(cacheKey);
+  if (cached) {
+    const res = NextResponse.json(cached);
+    res.headers.set("X-Cache", "HIT");
+    res.headers.set(
+      "Cache-Control",
+      "private, max-age=60, stale-while-revalidate=120"
+    );
+    return res;
   }
 
   try {
@@ -47,7 +62,7 @@ export async function GET() {
       }
     );
 
-    return NextResponse.json({
+    const payload = {
       ...totals,
       records: usage.map((r) => ({
         id: r.id,
@@ -58,7 +73,18 @@ export async function GET() {
         costUsd: Number(r.estimated_cost_usd),
         createdAt: r.created_at,
       })),
-    });
+    };
+
+    // Cache the result
+    cache.set(cacheKey, payload, CacheTTL.USAGE);
+
+    const res = NextResponse.json(payload);
+    res.headers.set("X-Cache", "MISS");
+    res.headers.set(
+      "Cache-Control",
+      "private, max-age=60, stale-while-revalidate=120"
+    );
+    return res;
   } catch (error) {
     console.error("Usage fetch error:", error);
     return NextResponse.json(

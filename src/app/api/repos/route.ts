@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { RepoDetail } from "@/lib/types";
+import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
 
 function checkRateLimit(res: Response) {
   if (res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0") {
@@ -95,13 +96,33 @@ async function processBatched<T, R>(
   return results;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session || !session.accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const accessToken = session.accessToken;
+  const userId = session.profileId || session.user?.email || "unknown";
+  const cacheKey = CacheKeys.repos(userId);
+
+  // Check for force-refresh via query param
+  const { searchParams } = new URL(request.url);
+  const forceRefresh = searchParams.get("fresh") === "1";
+
+  // Return cached data if available and not force-refreshing
+  if (!forceRefresh) {
+    const cached = cache.get<{ repos: RepoDetail[] }>(cacheKey);
+    if (cached) {
+      const res = NextResponse.json(cached);
+      res.headers.set("X-Cache", "HIT");
+      res.headers.set(
+        "Cache-Control",
+        "private, max-age=300, stale-while-revalidate=600"
+      );
+      return res;
+    }
+  }
 
   try {
     const repos = await fetchAllRepos(accessToken);
@@ -139,7 +160,18 @@ export async function GET() {
       }
     );
 
-    return NextResponse.json({ repos: detailedRepos });
+    const payload = { repos: detailedRepos };
+
+    // Cache the result
+    cache.set(cacheKey, payload, CacheTTL.REPOS);
+
+    const res = NextResponse.json(payload);
+    res.headers.set("X-Cache", "MISS");
+    res.headers.set(
+      "Cache-Control",
+      "private, max-age=300, stale-while-revalidate=600"
+    );
+    return res;
   } catch (error) {
     console.error("Error fetching repos:", error);
     return NextResponse.json(

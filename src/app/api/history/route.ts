@@ -2,11 +2,26 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || !session.profileId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const cacheKey = CacheKeys.history(session.profileId);
+
+  // Return cached data if available
+  const cached = cache.get<{ sessions: unknown[] }>(cacheKey);
+  if (cached) {
+    const res = NextResponse.json(cached);
+    res.headers.set("X-Cache", "HIT");
+    res.headers.set(
+      "Cache-Control",
+      "private, max-age=60, stale-while-revalidate=120"
+    );
+    return res;
   }
 
   try {
@@ -45,7 +60,18 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ sessions: sessions || [] });
+    const payload = { sessions: sessions || [] };
+
+    // Cache the result
+    cache.set(cacheKey, payload, CacheTTL.HISTORY);
+
+    const res = NextResponse.json(payload);
+    res.headers.set("X-Cache", "MISS");
+    res.headers.set(
+      "Cache-Control",
+      "private, max-age=60, stale-while-revalidate=120"
+    );
+    return res;
   } catch (error) {
     console.error("History fetch error:", error);
     return NextResponse.json(
@@ -86,6 +112,10 @@ export async function DELETE(request: Request) {
         { status: 500 }
       );
     }
+
+    // Invalidate history and usage caches for this user
+    cache.delete(CacheKeys.history(session.profileId));
+    cache.delete(CacheKeys.usage(session.profileId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

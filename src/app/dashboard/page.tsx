@@ -16,6 +16,7 @@ import {
   BarChart3,
   History,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 
 type Step = "loading" | "repos" | "analyzing" | "results";
@@ -52,13 +53,21 @@ export default function Dashboard() {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [showUsage, setShowUsage] = useState(false);
 
-  const fetchRepos = useCallback(async () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchRepos = useCallback(async (forceRefresh = false) => {
     setStep("loading");
-    setFetchProgress("Fetching your repositories from GitHub...");
+    setFetchProgress(
+      forceRefresh
+        ? "Refreshing repositories from GitHub..."
+        : "Fetching your repositories from GitHub..."
+    );
     setError(null);
+    if (forceRefresh) setIsRefreshing(true);
 
     try {
-      const res = await fetch("/api/repos");
+      const url = forceRefresh ? "/api/repos?fresh=1" : "/api/repos";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch repositories");
       const data = await res.json();
 
@@ -71,6 +80,8 @@ export default function Dashboard() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setStep("repos");
+    } finally {
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -545,6 +556,18 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => fetchRepos(true)}
+                disabled={isRefreshing}
+                className="text-sm text-zinc-500 hover:text-orange-400 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                title="Refresh repos from GitHub"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} strokeWidth={2} />
+                <span className="hidden sm:inline">Refresh</span>
+              </motion.button>
+              <span className="text-zinc-800">|</span>
               <button
                 onClick={selectAll}
                 className="text-sm text-zinc-500 hover:text-white transition-colors"
