@@ -23,7 +23,7 @@ async function fetchAllRepos(accessToken: string) {
 
   while (true) {
     const res = await fetch(
-      `https://api.github.com/user/repos?per_page=${perPage}&page=${page}&sort=updated&affiliation=owner`,
+      `https://api.github.com/user/repos?per_page=${perPage}&page=${page}&sort=updated&affiliation=owner&visibility=all`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
