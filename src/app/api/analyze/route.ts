@@ -226,10 +226,22 @@ Respond with the following XML structure exactly:
 
 Rules:
 - Create between 2-6 roles depending on the diversity of projects
-- Each role should have at least 2 matching repos if possible
+- **CRITICAL**: Each repository must be assigned to ONLY ONE role based on its primary category/domain
+- A repository cannot appear in multiple roles' matchingRepoNames
+- Match repositories to roles by their primary technology stack and purpose
+- A role CAN have multiple repositories if they all fit that category
+- Each role should have at least 1 matching repo
 - List 3-8 top skills per role (technologies, frameworks, concepts)
 - Do NOT generate CVs — only categorize projects into roles
-- Escape special XML characters: & as &amp; < as &lt; > as &gt;`;
+- Escape special XML characters: & as &amp; < as &lt; > as &gt;
+
+Example: If there are 5 repos (ai-model, ml-pipeline, react-app, vue-dashboard, mobile-app):
+✓ CORRECT categorization:
+- AI/ML Engineer: ["ai-model", "ml-pipeline"] ← Multiple AI projects in AI role
+- Frontend Developer: ["react-app", "vue-dashboard"] ← Multiple web projects in web role
+- Mobile Developer: ["mobile-app"] ← One mobile project
+✗ WRONG: DO NOT assign "react-app" to AI/ML Engineer role
+✗ WRONG: DO NOT assign "ai-model" to Frontend Developer role`;
 
     console.log("\n========================================");
     console.log("ANALYSIS PIPELINE START");
