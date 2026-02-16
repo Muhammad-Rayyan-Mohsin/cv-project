@@ -32,27 +32,19 @@ export default function Home() {
   return (
     <main className="min-h-screen pt-16">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] flex items-center">
         {/* Ambient Glows */}
         <div className="ambient-glow ambient-glow-orange w-[600px] h-[600px] -top-40 -left-40" />
         <div className="ambient-glow ambient-glow-purple w-[400px] h-[400px] top-20 right-0 opacity-10" />
         <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] bottom-0 right-1/4 opacity-10" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div
             className="text-center max-w-4xl mx-auto"
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
           >
-            {/* Badge */}
-            <motion.div variants={fadeUp} className="mb-8">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-1.5 text-xs font-medium text-zinc-400">
-                <Sparkles className="w-3.5 h-3.5 text-orange-400" strokeWidth={2} />
-                Powered by AI + GitHub
-              </span>
-            </motion.div>
-
             {/* Heading */}
             <motion.h1
               variants={fadeUp}

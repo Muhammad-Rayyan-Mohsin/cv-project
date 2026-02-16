@@ -191,7 +191,9 @@ export default function Dashboard() {
         })),
         skills: cv.skills,
         cv: cv.cv_content,
+        structuredCv: cv.structured_cv || undefined,
       })),
+      cvIds: historySession.generated_cvs.map((cv) => cv.id),
     };
     setAnalysis(result);
     setStep("results");
@@ -676,7 +678,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <CVDisplay roles={analysis.roles} />
+          <CVDisplay roles={analysis.roles} cvIds={analysis.cvIds} />
         </motion.div>
       )}
     </main>

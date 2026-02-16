@@ -54,6 +54,7 @@ export type Database = {
           role_title: string
           session_id: string
           skills: string[]
+          structured_cv: Json | null
           user_id: string
         }
         Insert: {
@@ -65,6 +66,7 @@ export type Database = {
           role_title: string
           session_id: string
           skills?: string[]
+          structured_cv?: Json | null
           user_id: string
         }
         Update: {
@@ -76,6 +78,7 @@ export type Database = {
           role_title?: string
           session_id?: string
           skills?: string[]
+          structured_cv?: Json | null
           user_id?: string
         }
         Relationships: [
@@ -100,31 +103,49 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          education: Json
           email: string | null
+          full_name: string | null
           github_id: number
           github_username: string
           id: string
+          linkedin_url: string | null
+          location: string | null
+          phone: string | null
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          education?: Json
           email?: string | null
+          full_name?: string | null
           github_id: number
           github_username: string
           id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          education?: Json
           email?: string | null
+          full_name?: string | null
           github_id?: number
           github_username?: string
           id?: string
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: []
       }

@@ -27,6 +27,7 @@ export async function GET() {
           skills,
           matching_repos,
           cv_content,
+          structured_cv,
           created_at
         )
       `

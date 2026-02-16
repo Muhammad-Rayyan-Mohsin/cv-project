@@ -23,12 +23,15 @@ export interface RepoDetail extends Repository {
   readme: string | null;
 }
 
+import { StructuredCV } from "./cv-types";
+
 export interface CareerRole {
   role: string;
   description: string;
   matchingRepos: RepoDetail[];
   skills: string[];
   cv: string;
+  structuredCv?: StructuredCV;
 }
 
 export interface TokenUsage {
@@ -43,6 +46,7 @@ export interface AnalysisResult {
   summary: string;
   sessionId?: string | null;
   tokenUsage?: TokenUsage;
+  cvIds?: string[];
 }
 
 export interface UsageRecord {
@@ -77,6 +81,7 @@ export interface HistorySession {
     skills: string[];
     matching_repos: { name: string; html_url: string }[];
     cv_content: string;
+    structured_cv: StructuredCV | null;
     created_at: string;
   }[];
 }

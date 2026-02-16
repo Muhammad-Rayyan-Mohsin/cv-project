@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FileText, LogOut, LayoutDashboard, Github } from "lucide-react";
+import { LogOut, LayoutDashboard, Github, UserCircle } from "lucide-react";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -13,10 +13,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-              <FileText className="w-4 h-4 text-white" strokeWidth={2} />
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.25)] group-hover:shadow-[0_0_24px_rgba(249,115,22,0.35)] transition-shadow">
+              {/* Folded paper / origami abstract mark */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4 L20 4 L20 20 L4 20 Z" fill="white" fillOpacity="0.25" />
+                <path d="M4 4 L14 4 L20 10 L20 20 L4 20 Z" fill="white" fillOpacity="0.9" />
+                <path d="M14 4 L14 10 L20 10 Z" fill="white" fillOpacity="0.5" />
+              </svg>
             </div>
-            <span className="text-white font-bold text-lg tracking-tight">
+            <span className="text-white font-extrabold text-lg tracking-tight">
               CV Tailor
             </span>
           </Link>
@@ -32,6 +37,13 @@ export default function Navbar() {
                 >
                   <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
                   Dashboard
+                </Link>
+                <Link
+                  href="/dashboard/profile"
+                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-full hover:bg-white/5"
+                >
+                  <UserCircle className="w-4 h-4" strokeWidth={1.5} />
+                  Profile
                 </Link>
                 <div className="flex items-center gap-3 pl-2 border-l border-white/10">
                   <img
