@@ -6,23 +6,23 @@ import { Star, Lock, Check } from "lucide-react";
 
 const languageColors: Record<string, string> = {
   JavaScript: "bg-yellow-400",
-  TypeScript: "bg-blue-500",
-  Python: "bg-green-500",
-  Java: "bg-orange-500",
-  "C++": "bg-pink-500",
-  C: "bg-gray-500",
-  "C#": "bg-purple-600",
+  TypeScript: "bg-blue-400",
+  Python: "bg-green-400",
+  Java: "bg-orange-400",
+  "C++": "bg-pink-400",
+  C: "bg-zinc-400",
+  "C#": "bg-purple-400",
   Go: "bg-cyan-400",
-  Rust: "bg-orange-700",
-  Ruby: "bg-red-500",
+  Rust: "bg-orange-600",
+  Ruby: "bg-red-400",
   PHP: "bg-indigo-400",
-  Swift: "bg-orange-400",
-  Kotlin: "bg-purple-400",
-  Dart: "bg-blue-400",
-  HTML: "bg-red-400",
-  CSS: "bg-blue-300",
-  Shell: "bg-green-400",
-  Jupyter: "bg-orange-300",
+  Swift: "bg-orange-300",
+  Kotlin: "bg-purple-300",
+  Dart: "bg-blue-300",
+  HTML: "bg-red-300",
+  CSS: "bg-blue-200",
+  Shell: "bg-green-300",
+  Jupyter: "bg-orange-200",
 };
 
 export default function RepoCard({
@@ -36,96 +36,87 @@ export default function RepoCard({
 }) {
   const topLanguages = Object.entries(repo.languages || {})
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
-  const totalBytes = topLanguages.reduce((sum, [, bytes]) => sum + bytes, 0);
+    .slice(0, 3);
 
   return (
     <motion.div
       onClick={onToggle}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-200 card-shimmer ${
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.99 }}
+      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-200 ${
         selected
-          ? "border border-orange-500/40 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.08)]"
-          : "border border-white/5 bg-zinc-950 hover:border-white/10"
+          ? "ring-1 ring-orange-500/30 bg-orange-500/[0.03]"
+          : "border border-white/[0.06] bg-zinc-950 hover:border-white/10"
       }`}
     >
-      {/* Checkbox */}
-      <div className="absolute top-4 right-4">
-        <div
-          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-            selected
-              ? "bg-gradient-to-br from-orange-500 to-amber-500"
-              : "border border-white/10 bg-zinc-900"
-          }`}
-        >
-          {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+      {/* Selection indicator - minimal check */}
+      {selected && (
+        <div className="absolute top-4 right-4">
+          <div className="w-5 h-5 rounded-full bg-orange-500/15 flex items-center justify-center">
+            <Check className="w-3 h-3 text-orange-400" strokeWidth={2.5} />
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="pr-8">
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-white font-semibold text-base tracking-tight">{repo.name}</h3>
+      <div className={selected ? "pr-8" : ""}>
+        {/* Title row */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <h3 className="text-white font-medium text-[15px] tracking-tight">
+            {repo.name}
+          </h3>
           {repo.private && (
-            <span className="flex items-center gap-1 text-[10px] bg-white/5 text-zinc-500 px-2 py-0.5 rounded-full border border-white/5">
-              <Lock className="w-2.5 h-2.5" strokeWidth={2} />
-              Private
+            <Lock className="w-3 h-3 text-zinc-600" strokeWidth={1.5} />
+          )}
+        </div>
+
+        {/* Description - only render if exists */}
+        {repo.description && (
+          <p className="text-zinc-500 text-sm mb-3 line-clamp-2 leading-relaxed">
+            {repo.description}
+          </p>
+        )}
+
+        {/* Footer: languages + stars */}
+        <div className="flex items-center justify-between mt-3">
+          {/* Languages as subtle dot + text */}
+          <div className="flex items-center gap-3">
+            {topLanguages.map(([lang]) => (
+              <span
+                key={lang}
+                className="flex items-center gap-1.5 text-xs text-zinc-500"
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    languageColors[lang] || "bg-zinc-500"
+                  } opacity-70`}
+                />
+                {lang}
+              </span>
+            ))}
+          </div>
+
+          {/* Stars */}
+          {repo.stargazers_count > 0 && (
+            <span className="flex items-center gap-1 text-xs text-zinc-600">
+              <Star className="w-3 h-3" strokeWidth={1.5} />
+              {repo.stargazers_count}
             </span>
           )}
         </div>
 
-        <p className="text-zinc-500 text-sm mb-3 line-clamp-2 leading-relaxed">
-          {repo.description || "No description"}
-        </p>
-
-        {topLanguages.length > 0 && (
-          <div className="mb-3">
-            <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5">
-              {topLanguages.map(([lang, bytes]) => (
-                <div
-                  key={lang}
-                  className={`${languageColors[lang] || "bg-zinc-500"} rounded-full opacity-80`}
-                  style={{ width: `${(bytes / totalBytes) * 100}%` }}
-                  title={`${lang}: ${((bytes / totalBytes) * 100).toFixed(1)}%`}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {topLanguages.map(([lang]) => (
-                <span
-                  key={lang}
-                  className="flex items-center gap-1.5 text-xs text-zinc-500"
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      languageColors[lang] || "bg-zinc-500"
-                    }`}
-                  />
-                  {lang}
-                </span>
-              ))}
-            </div>
+        {/* Topics - only if present, very subtle */}
+        {repo.topics?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {repo.topics.slice(0, 3).map((topic) => (
+              <span
+                key={topic}
+                className="text-[11px] text-zinc-600 bg-white/[0.03] px-2 py-0.5 rounded-full"
+              >
+                {topic}
+              </span>
+            ))}
           </div>
         )}
-
-        <div className="flex items-center gap-3 text-xs text-zinc-600">
-          {repo.topics?.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {repo.topics.slice(0, 3).map((topic) => (
-                <span
-                  key={topic}
-                  className="bg-white/5 text-zinc-500 px-2 py-0.5 rounded-full border border-white/5"
-                >
-                  {topic}
-                </span>
-              ))}
-            </div>
-          )}
-          <span className="flex items-center gap-1 text-zinc-500">
-            <Star className="w-3 h-3" strokeWidth={1.5} />
-            {repo.stargazers_count}
-          </span>
-        </div>
       </div>
     </motion.div>
   );
