@@ -1,15 +1,16 @@
 "use client";
 
-import { StructuredCV } from "@/lib/cv-types";
+import { StructuredCV, TemplateId } from "@/lib/cv-types";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Check, Eye, Pencil } from "lucide-react";
+import { ArrowLeft, Save, Check, Eye, Pencil, Camera } from "lucide-react";
 import SummaryEditor from "./SummaryEditor";
 import SkillsEditor from "./SkillsEditor";
 import ExperienceEditor from "./ExperienceEditor";
 import EducationEditor from "./EducationEditor";
 import CertificationsEditor from "./CertificationsEditor";
 import CVPreview from "./CVPreview";
+import TemplateSelector from "@/components/cv-templates/TemplateSelector";
 
 export default function CVEditor({
   initialData,
@@ -128,6 +129,40 @@ export default function CVEditor({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Editor (left) */}
         <div className={`space-y-5 ${showPreview ? "hidden lg:block" : ""}`}>
+          {/* Template Selector */}
+          <TemplateSelector
+            selected={cvData.templateId || "classic"}
+            onChange={(templateId: TemplateId) =>
+              setCvData((prev) => ({ ...prev, templateId }))
+            }
+          />
+
+          {/* Photo URL */}
+          <div>
+            <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+              <Camera className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Photo URL
+            </label>
+            <input
+              type="url"
+              value={cvData.personalDetails.photoUrl || ""}
+              onChange={(e) =>
+                setCvData((prev) => ({
+                  ...prev,
+                  personalDetails: {
+                    ...prev.personalDetails,
+                    photoUrl: e.target.value || undefined,
+                  },
+                }))
+              }
+              placeholder="https://example.com/photo.jpg (for Modern, Professional, Creative)"
+              className="w-full bg-transparent border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+            />
+            <p className="text-[10px] text-zinc-600 mt-1">
+              Your GitHub avatar is used automatically if set in your Profile.
+            </p>
+          </div>
+
           {/* Personal Details (read-only reminder) */}
           <div className="rounded-xl bg-black/40 border border-white/[0.04] px-3 py-2.5">
             <p className="text-[11px] text-zinc-500">

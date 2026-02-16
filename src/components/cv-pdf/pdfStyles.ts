@@ -11,23 +11,36 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
   },
   // Header
+  headerBlock: {
+    alignItems: "center",
+    marginBottom: 2,
+  },
   name: {
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: "#000000",
-    marginBottom: 2,
+    marginBottom: 3,
+    textAlign: "center",
   },
   contactRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 2,
+    justifyContent: "center",
+    alignItems: "center",
     fontSize: 8,
     color: "#666666",
     marginBottom: 4,
   },
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   contactSep: {
     color: "#cccccc",
-    marginHorizontal: 3,
+    marginHorizontal: 4,
+  },
+  contactLink: {
+    color: "#666666",
   },
   // Section
   sectionHeader: {

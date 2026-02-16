@@ -6,6 +6,7 @@ export interface PersonalDetails {
   linkedIn: string;
   github: string;
   website: string;
+  photoUrl?: string;
 }
 
 export interface EducationEntry {
@@ -33,6 +34,8 @@ export interface SkillCategory {
   items: string[];
 }
 
+export type TemplateId = "classic" | "modern" | "professional" | "creative";
+
 export interface StructuredCV {
   personalDetails: PersonalDetails;
   summary: string;
@@ -40,4 +43,5 @@ export interface StructuredCV {
   experience: ExperienceEntry[];
   education: EducationEntry[];
   certifications: string[];
+  templateId?: TemplateId;
 }

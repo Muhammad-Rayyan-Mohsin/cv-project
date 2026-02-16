@@ -13,7 +13,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "full_name, email, phone, location, linkedin_url, website_url, education, github_username"
+        "full_name, email, phone, location, linkedin_url, website_url, education, github_username, avatar_url"
       )
       .eq("id", session.profileId)
       .single();
@@ -36,6 +36,7 @@ export async function GET() {
         website: data.website_url || "",
         github: data.github_username || "",
         education: data.education || [],
+        avatarUrl: data.avatar_url || "",
       },
     });
   } catch (error) {

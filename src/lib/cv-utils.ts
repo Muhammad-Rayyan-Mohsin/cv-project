@@ -97,6 +97,7 @@ export function mergeProfileIntoCv(
     github: string;
     website: string;
     education: EducationEntry[];
+    avatarUrl?: string;
   }
 ): StructuredCV {
   return {
@@ -109,6 +110,7 @@ export function mergeProfileIntoCv(
       linkedIn: profile.linkedIn,
       github: profile.github,
       website: profile.website,
+      photoUrl: cv.personalDetails.photoUrl || profile.avatarUrl || undefined,
     },
     education:
       cv.education.length > 0 ? cv.education : profile.education || [],
