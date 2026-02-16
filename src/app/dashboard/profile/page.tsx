@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { EducationEntry } from "@/lib/cv-types";
+import { EducationEntry, ExperienceEntry } from "@/lib/cv-types";
 import {
   Save,
   Plus,
@@ -15,6 +15,7 @@ import {
   Linkedin,
   Globe,
   GraduationCap,
+  Briefcase,
   ArrowLeft,
   Check,
 } from "lucide-react";
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const [linkedIn, setLinkedIn] = useState("");
   const [website, setWebsite] = useState("");
   const [education, setEducation] = useState<EducationEntry[]>([]);
+  const [workExperience, setWorkExperience] = useState<ExperienceEntry[]>([]);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -63,6 +65,14 @@ export default function ProfilePage() {
             id: e.id || crypto.randomUUID(),
           }))
         );
+        setWorkExperience(
+          (p.workExperience || []).map((e: ExperienceEntry) => ({
+            ...e,
+            id: e.id || crypto.randomUUID(),
+            bullets: e.bullets || [],
+            technologies: e.technologies || [],
+          }))
+        );
       }
     } catch (err) {
       console.error("Failed to fetch profile:", err);
@@ -85,6 +95,7 @@ export default function ProfilePage() {
           linkedIn,
           website,
           education,
+          workExperience,
         }),
       });
       if (res.ok) {
@@ -123,6 +134,66 @@ export default function ProfilePage() {
   ) => {
     setEducation((prev) =>
       prev.map((e) => (e.id === id ? { ...e, [field]: value } : e))
+    );
+  };
+
+  const addWorkExperience = () => {
+    setWorkExperience((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        title: "",
+        organization: "",
+        startDate: "",
+        endDate: "",
+        bullets: [""],
+        technologies: [],
+      },
+    ]);
+  };
+
+  const removeWorkExperience = (id: string) => {
+    setWorkExperience((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const updateWorkExperience = (
+    id: string,
+    field: keyof ExperienceEntry,
+    value: string | string[]
+  ) => {
+    setWorkExperience((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, [field]: value } : e))
+    );
+  };
+
+  const addBullet = (expId: string) => {
+    setWorkExperience((prev) =>
+      prev.map((e) =>
+        e.id === expId ? { ...e, bullets: [...e.bullets, ""] } : e
+      )
+    );
+  };
+
+  const removeBullet = (expId: string, bulletIndex: number) => {
+    setWorkExperience((prev) =>
+      prev.map((e) =>
+        e.id === expId
+          ? { ...e, bullets: e.bullets.filter((_, i) => i !== bulletIndex) }
+          : e
+      )
+    );
+  };
+
+  const updateBullet = (expId: string, bulletIndex: number, value: string) => {
+    setWorkExperience((prev) =>
+      prev.map((e) =>
+        e.id === expId
+          ? {
+              ...e,
+              bullets: e.bullets.map((b, i) => (i === bulletIndex ? value : b)),
+            }
+          : e
+      )
     );
   };
 
@@ -320,6 +391,152 @@ export default function ProfilePage() {
                       updateEducation(edu.id, "details", e.target.value)
                     }
                     placeholder="Details (e.g. GPA 3.8, Dean's List, Thesis topic)"
+                    className="w-full bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Work Experience */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="rounded-2xl bg-zinc-950 border border-white/5 p-6 mb-6"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+              Work Experience
+            </h2>
+            <button
+              onClick={addWorkExperience}
+              className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
+              Add Entry
+            </button>
+          </div>
+
+          {workExperience.length === 0 ? (
+            <div className="text-center py-8">
+              <Briefcase className="w-8 h-8 text-zinc-700 mx-auto mb-3" strokeWidth={1.5} />
+              <p className="text-zinc-500 text-sm">No work experience entries yet.</p>
+              <button
+                onClick={addWorkExperience}
+                className="text-orange-400 hover:text-orange-300 text-sm mt-2 transition-colors"
+              >
+                Add your first entry
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {workExperience.map((exp) => (
+                <div
+                  key={exp.id}
+                  className="rounded-xl bg-black/40 border border-white/[0.04] p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        value={exp.title}
+                        onChange={(e) =>
+                          updateWorkExperience(exp.id, "title", e.target.value)
+                        }
+                        placeholder="Job Title"
+                        className="bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                      />
+                      <input
+                        type="text"
+                        value={exp.organization}
+                        onChange={(e) =>
+                          updateWorkExperience(
+                            exp.id,
+                            "organization",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Company Name"
+                        className="bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                      />
+                      <input
+                        type="text"
+                        value={exp.startDate}
+                        onChange={(e) =>
+                          updateWorkExperience(exp.id, "startDate", e.target.value)
+                        }
+                        placeholder="Start (e.g. Jan 2022)"
+                        className="bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                      />
+                      <input
+                        type="text"
+                        value={exp.endDate}
+                        onChange={(e) =>
+                          updateWorkExperience(exp.id, "endDate", e.target.value)
+                        }
+                        placeholder="End (e.g. Present)"
+                        className="bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeWorkExperience(exp.id)}
+                      className="ml-3 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                    </button>
+                  </div>
+
+                  {/* Bullet Points */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-500">Key Responsibilities / Achievements</label>
+                      <button
+                        onClick={() => addBullet(exp.id)}
+                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" strokeWidth={2} />
+                        Add
+                      </button>
+                    </div>
+                    {exp.bullets.map((bullet, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-zinc-600 text-xs">•</span>
+                        <input
+                          type="text"
+                          value={bullet}
+                          onChange={(e) => updateBullet(exp.id, idx, e.target.value)}
+                          placeholder="e.g. Led development of microservices architecture..."
+                          className="flex-1 bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
+                        />
+                        {exp.bullets.length > 1 && (
+                          <button
+                            onClick={() => removeBullet(exp.id, idx)}
+                            className="p-1 text-zinc-700 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Technologies */}
+                  <input
+                    type="text"
+                    value={exp.technologies.join(", ")}
+                    onChange={(e) =>
+                      updateWorkExperience(
+                        exp.id,
+                        "technologies",
+                        e.target.value
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter(Boolean)
+                      )
+                    }
+                    placeholder="Technologies (comma-separated, e.g. React, Node.js, AWS)"
                     className="w-full bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
                   />
                 </div>

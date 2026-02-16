@@ -9,20 +9,22 @@ function cleanUrl(url: string): string {
 export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
   const pd = cv.personalDetails;
 
-  const contactItems: { text: string; href?: string }[] = [];
-  if (pd.email) contactItems.push({ text: pd.email, href: `mailto:${pd.email}` });
-  if (pd.phone) contactItems.push({ text: pd.phone, href: `tel:${pd.phone}` });
-  if (pd.location) contactItems.push({ text: pd.location });
+  const personalItems: { text: string; href?: string }[] = [];
+  if (pd.email) personalItems.push({ text: pd.email, href: `mailto:${pd.email}` });
+  if (pd.phone) personalItems.push({ text: pd.phone, href: `tel:${pd.phone}` });
+  if (pd.location) personalItems.push({ text: pd.location });
+
+  const linkItems: { text: string; href?: string }[] = [];
   if (pd.linkedIn) {
     const href = pd.linkedIn.startsWith("http") ? pd.linkedIn : `https://${pd.linkedIn}`;
-    contactItems.push({ text: cleanUrl(pd.linkedIn), href });
+    linkItems.push({ text: cleanUrl(pd.linkedIn), href });
   }
   if (pd.github) {
-    contactItems.push({ text: `github.com/${pd.github}`, href: `https://github.com/${pd.github}` });
+    linkItems.push({ text: `github.com/${pd.github}`, href: `https://github.com/${pd.github}` });
   }
   if (pd.website) {
     const href = pd.website.startsWith("http") ? pd.website : `https://${pd.website}`;
-    contactItems.push({ text: cleanUrl(pd.website), href });
+    linkItems.push({ text: cleanUrl(pd.website), href });
   }
 
   return (
@@ -31,7 +33,7 @@ export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
         <View>
           <Text style={styles.name}>{pd.fullName}</Text>
           <View style={styles.contactRow}>
-            {contactItems.map((item, i) => (
+            {personalItems.map((item, i) => (
               <View key={i} style={{ flexDirection: "row", alignItems: "center" }}>
                 {i > 0 && <Text style={styles.contactSep}>|</Text>}
                 {item.href ? (
@@ -44,6 +46,22 @@ export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
               </View>
             ))}
           </View>
+          {linkItems.length > 0 && (
+            <View style={{ ...styles.contactRow, marginTop: 0 }}>
+              {linkItems.map((item, i) => (
+                <View key={i} style={{ flexDirection: "row", alignItems: "center" }}>
+                  {i > 0 && <Text style={styles.contactSep}>|</Text>}
+                  {item.href ? (
+                    <Link src={item.href}>
+                      <Text style={{ color: "#2563eb", fontSize: 8 }}>{item.text}</Text>
+                    </Link>
+                  ) : (
+                    <Text style={{ fontSize: 8 }}>{item.text}</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
           <View style={styles.divider} />
         </View>
       )}

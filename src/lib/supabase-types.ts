@@ -114,6 +114,7 @@ export type Database = {
           phone: string | null
           updated_at: string
           website_url: string | null
+          work_experience: Json
         }
         Insert: {
           avatar_url?: string | null
@@ -130,6 +131,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           website_url?: string | null
+          work_experience?: Json
         }
         Update: {
           avatar_url?: string | null
@@ -146,6 +148,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           website_url?: string | null
+          work_experience?: Json
         }
         Relationships: []
       }

@@ -1,4 +1,4 @@
-import { PersonalDetails, StructuredCV, EducationEntry } from "./cv-types";
+import { PersonalDetails, StructuredCV, EducationEntry, ExperienceEntry } from "./cv-types";
 
 export function structuredCvToMarkdown(
   cv: StructuredCV,
@@ -97,9 +97,20 @@ export function mergeProfileIntoCv(
     github: string;
     website: string;
     education: EducationEntry[];
+    workExperience?: ExperienceEntry[];
     avatarUrl?: string;
   }
 ): StructuredCV {
+  // Prepend real work experience before AI-generated project experience
+  const profileWorkExp = (profile.workExperience || []).map((exp) => ({
+    ...exp,
+    id: exp.id || crypto.randomUUID(),
+  }));
+  const mergedExperience =
+    profileWorkExp.length > 0
+      ? [...profileWorkExp, ...cv.experience]
+      : cv.experience;
+
   return {
     ...cv,
     personalDetails: {
@@ -112,6 +123,7 @@ export function mergeProfileIntoCv(
       website: profile.website,
       photoUrl: cv.personalDetails.photoUrl || profile.avatarUrl || undefined,
     },
+    experience: mergedExperience,
     education:
       cv.education.length > 0 ? cv.education : profile.education || [],
   };

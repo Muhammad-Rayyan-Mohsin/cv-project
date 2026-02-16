@@ -26,6 +26,21 @@ export async function GET() {
       );
     }
 
+    // Fetch work_experience separately to handle missing column gracefully
+    let workExperience: unknown[] = [];
+    try {
+      const { data: weData } = await supabase
+        .from("profiles")
+        .select("work_experience")
+        .eq("id", session.profileId)
+        .single();
+      if (weData && weData.work_experience) {
+        workExperience = weData.work_experience as unknown[];
+      }
+    } catch {
+      // Column may not exist yet — that's fine
+    }
+
     return NextResponse.json({
       profile: {
         fullName: data.full_name || "",
@@ -36,6 +51,7 @@ export async function GET() {
         website: data.website_url || "",
         github: data.github_username || "",
         education: data.education || [],
+        workExperience,
         avatarUrl: data.avatar_url || "",
       },
     });
@@ -56,21 +72,28 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { fullName, email, phone, location, linkedIn, website, education } =
+    const { fullName, email, phone, location, linkedIn, website, education, workExperience } =
       body;
+
+    const updateData: Record<string, unknown> = {
+      full_name: fullName || null,
+      email: email || null,
+      phone: phone || null,
+      location: location || null,
+      linkedin_url: linkedIn || null,
+      website_url: website || null,
+      education: education || [],
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only include work_experience if the column exists
+    if (workExperience !== undefined) {
+      updateData.work_experience = workExperience || [];
+    }
 
     const { error } = await supabase
       .from("profiles")
-      .update({
-        full_name: fullName || null,
-        email: email || null,
-        phone: phone || null,
-        location: location || null,
-        linkedin_url: linkedIn || null,
-        website_url: website || null,
-        education: education || [],
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", session.profileId);
 
     if (error) {

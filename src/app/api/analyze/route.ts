@@ -189,6 +189,7 @@ export async function POST(request: Request) {
     last_updated: repo.pushed_at,
   }));
 
+
   try {
     // -----------------------------------------------------------------------
     // AGENT 1 — Categorizer
@@ -375,7 +376,7 @@ Rules:
 - Create 2-4 skill categories with relevant items for this role
 - The experience entries should map to the repositories provided
 - Include the repo URL in each experience entry's repoUrl element
-- Do NOT include education or certifications (user fills these from their profile)
+- Do NOT include education, certifications, or work experience (user fills these from their profile)
 - Escape special XML characters: & as &amp; < as &lt; > as &gt;`;
 
       try {

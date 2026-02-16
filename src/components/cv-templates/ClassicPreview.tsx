@@ -24,11 +24,11 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
       <div className="bg-white text-black rounded-lg p-4 sm:p-8 shadow-lg max-w-[210mm] mx-auto text-[9pt] sm:text-[10.5pt] leading-[1.35] font-[system-ui] min-w-[320px]">
         {/* Header */}
         {pd.fullName && (
-          <div className="mb-3 pb-2 border-b border-gray-300">
+          <div className="mb-3 pb-2 border-b border-gray-300 text-center">
             <h1 className="text-[16pt] sm:text-[20pt] font-bold text-black tracking-tight leading-tight">
               {pd.fullName}
             </h1>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-1">
+            <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-1.5">
               {pd.email && (
                 <a href={`mailto:${pd.email}`} className="text-blue-700 hover:underline">
                   {pd.email}
@@ -48,25 +48,24 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
                   <span>{pd.location}</span>
                 </>
               )}
-              {pd.linkedIn && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  {linkify(pd.linkedIn)}
-                </>
-              )}
-              {pd.github && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  {linkify(`https://github.com/${pd.github}`, `github.com/${pd.github}`)}
-                </>
-              )}
-              {pd.website && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  {linkify(pd.website)}
-                </>
-              )}
             </div>
+            {(pd.linkedIn || pd.github || pd.website) && (
+              <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-0.5">
+                {pd.linkedIn && linkify(pd.linkedIn)}
+                {pd.github && (
+                  <>
+                    {pd.linkedIn && <span className="text-gray-300">|</span>}
+                    {linkify(`https://github.com/${pd.github}`, `github.com/${pd.github}`)}
+                  </>
+                )}
+                {pd.website && (
+                  <>
+                    {(pd.linkedIn || pd.github) && <span className="text-gray-300">|</span>}
+                    {linkify(pd.website)}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 

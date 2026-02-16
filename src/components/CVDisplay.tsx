@@ -28,6 +28,7 @@ interface ProfileData {
   github: string;
   website: string;
   education: any[];
+  workExperience?: any[];
   avatarUrl?: string;
 }
 
