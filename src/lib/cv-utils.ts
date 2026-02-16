@@ -105,6 +105,8 @@ export function mergeProfileIntoCv(
   const profileWorkExp = (profile.workExperience || []).map((exp) => ({
     ...exp,
     id: exp.id || crypto.randomUUID(),
+    bullets: Array.isArray(exp.bullets) ? exp.bullets : [],
+    technologies: Array.isArray(exp.technologies) ? exp.technologies : [],
   }));
   const mergedExperience =
     profileWorkExp.length > 0
@@ -124,8 +126,7 @@ export function mergeProfileIntoCv(
       photoUrl: cv.personalDetails.photoUrl || profile.avatarUrl || undefined,
     },
     experience: mergedExperience,
-    education:
-      cv.education.length > 0 ? cv.education : profile.education || [],
+    education: profile.education || [],
   };
 }
 

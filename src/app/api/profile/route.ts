@@ -29,16 +29,26 @@ export async function GET() {
     // Fetch work_experience separately to handle missing column gracefully
     let workExperience: unknown[] = [];
     try {
-      const { data: weData } = await supabase
+      const { data: weData, error: weError } = await supabase
         .from("profiles")
         .select("work_experience")
         .eq("id", session.profileId)
         .single();
-      if (weData && weData.work_experience) {
+
+      if (weError) {
+        // Only ignore "column not found" errors (PostgreSQL error code 42703)
+        const isColumnMissing =
+          weError.message?.includes("column") ||
+          weError.code === "42703" ||
+          weError.message?.includes("work_experience");
+        if (!isColumnMissing) {
+          console.error("Failed to fetch work_experience:", weError);
+        }
+      } else if (weData && weData.work_experience) {
         workExperience = weData.work_experience as unknown[];
       }
-    } catch {
-      // Column may not exist yet — that's fine
+    } catch (err) {
+      console.error("Unexpected error fetching work_experience:", err);
     }
 
     return NextResponse.json({

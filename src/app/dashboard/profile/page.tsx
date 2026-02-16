@@ -83,6 +83,22 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     setSaving(true);
+
+    // Clean up work experience before save
+    const cleanedWorkExperience = workExperience
+      .map((exp) => ({
+        ...exp,
+        bullets: exp.bullets.filter((b) => b.trim() !== ""),
+        technologies: exp.technologies.filter((t) => t.trim() !== ""),
+      }))
+      .filter(
+        (exp) =>
+          // Only save if has title OR organization OR at least one bullet
+          exp.title.trim() !== "" ||
+          exp.organization.trim() !== "" ||
+          exp.bullets.length > 0
+      );
+
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
@@ -95,7 +111,7 @@ export default function ProfilePage() {
           linkedIn,
           website,
           education,
-          workExperience,
+          workExperience: cleanedWorkExperience,
         }),
       });
       if (res.ok) {
@@ -146,8 +162,9 @@ export default function ProfilePage() {
         organization: "",
         startDate: "",
         endDate: "",
-        bullets: [""],
+        bullets: [],
         technologies: [],
+        repoUrl: undefined,
       },
     ]);
   };
@@ -510,14 +527,12 @@ export default function ProfilePage() {
                           placeholder="e.g. Led development of microservices architecture..."
                           className="flex-1 bg-transparent border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30"
                         />
-                        {exp.bullets.length > 1 && (
-                          <button
-                            onClick={() => removeBullet(exp.id, idx)}
-                            className="p-1 text-zinc-700 hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => removeBullet(exp.id, idx)}
+                          className="p-1 text-zinc-700 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
                       </div>
                     ))}
                   </div>
