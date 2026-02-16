@@ -131,7 +131,9 @@ export default function Dashboard() {
   };
 
   const selectAll = () => {
-    setSelectedRepos(new Set(repos.map((r) => r.id)));
+    // Only select first 50 repos (API limit)
+    const MAX_REPOS = 50;
+    setSelectedRepos(new Set(repos.slice(0, MAX_REPOS).map((r) => r.id)));
   };
 
   const deselectAll = () => {
