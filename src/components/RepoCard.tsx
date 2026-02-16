@@ -1,6 +1,8 @@
 "use client";
 
 import { RepoDetail } from "@/lib/types";
+import { motion } from "framer-motion";
+import { Star, Lock, Check } from "lucide-react";
 
 const languageColors: Record<string, string> = {
   JavaScript: "bg-yellow-400",
@@ -38,51 +40,51 @@ export default function RepoCard({
   const totalBytes = topLanguages.reduce((sum, [, bytes]) => sum + bytes, 0);
 
   return (
-    <div
+    <motion.div
       onClick={onToggle}
-      className={`relative p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      className={`relative p-5 rounded-2xl cursor-pointer transition-all duration-200 card-shimmer ${
         selected
-          ? "border-emerald-400 bg-emerald-400/5 shadow-lg shadow-emerald-400/10"
-          : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+          ? "border border-purple-500/40 bg-purple-500/5 shadow-[0_0_30px_rgba(168,85,247,0.08)]"
+          : "border border-white/5 bg-zinc-950 hover:border-white/10"
       }`}
     >
+      {/* Checkbox */}
       <div className="absolute top-4 right-4">
         <div
-          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
             selected
-              ? "bg-emerald-400 border-emerald-400"
-              : "border-gray-600"
+              ? "bg-gradient-to-br from-purple-500 to-fuchsia-500"
+              : "border border-white/10 bg-zinc-900"
           }`}
         >
-          {selected && (
-            <svg className="w-3 h-3 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
+          {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
         </div>
       </div>
 
       <div className="pr-8">
         <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-white font-semibold text-lg">{repo.name}</h3>
+          <h3 className="text-white font-semibold text-base tracking-tight">{repo.name}</h3>
           {repo.private && (
-            <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] bg-white/5 text-zinc-500 px-2 py-0.5 rounded-full border border-white/5">
+              <Lock className="w-2.5 h-2.5" strokeWidth={2} />
               Private
             </span>
           )}
         </div>
 
-        <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+        <p className="text-zinc-500 text-sm mb-3 line-clamp-2 leading-relaxed">
           {repo.description || "No description"}
         </p>
 
         {topLanguages.length > 0 && (
           <div className="mb-3">
-            <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
+            <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5">
               {topLanguages.map(([lang, bytes]) => (
                 <div
                   key={lang}
-                  className={`${languageColors[lang] || "bg-gray-500"} rounded-full`}
+                  className={`${languageColors[lang] || "bg-zinc-500"} rounded-full opacity-80`}
                   style={{ width: `${(bytes / totalBytes) * 100}%` }}
                   title={`${lang}: ${((bytes / totalBytes) * 100).toFixed(1)}%`}
                 />
@@ -92,11 +94,11 @@ export default function RepoCard({
               {topLanguages.map(([lang]) => (
                 <span
                   key={lang}
-                  className="flex items-center gap-1 text-xs text-gray-400"
+                  className="flex items-center gap-1.5 text-xs text-zinc-500"
                 >
                   <span
-                    className={`w-2 h-2 rounded-full ${
-                      languageColors[lang] || "bg-gray-500"
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      languageColors[lang] || "bg-zinc-500"
                     }`}
                   />
                   {lang}
@@ -106,27 +108,25 @@ export default function RepoCard({
           </div>
         )}
 
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center gap-3 text-xs text-zinc-600">
           {repo.topics?.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {repo.topics.slice(0, 3).map((topic) => (
                 <span
                   key={topic}
-                  className="bg-gray-700/50 text-gray-400 px-2 py-0.5 rounded-full"
+                  className="bg-white/5 text-zinc-500 px-2 py-0.5 rounded-full border border-white/5"
                 >
                   {topic}
                 </span>
               ))}
             </div>
           )}
-          <span className="flex items-center gap-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z" />
-            </svg>
+          <span className="flex items-center gap-1 text-zinc-500">
+            <Star className="w-3 h-3" strokeWidth={1.5} />
             {repo.stargazers_count}
           </span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

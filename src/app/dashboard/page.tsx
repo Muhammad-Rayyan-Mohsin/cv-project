@@ -5,8 +5,33 @@ import { useEffect, useState, useCallback } from "react";
 import { RepoDetail, AnalysisResult, HistorySession, UsageStats } from "@/lib/types";
 import RepoCard from "@/components/RepoCard";
 import CVDisplay from "@/components/CVDisplay";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Cpu,
+  Check,
+  AlertCircle,
+  ArrowLeft,
+  Zap,
+  Trash2,
+  BarChart3,
+  History,
+  Sparkles,
+} from "lucide-react";
 
 type Step = "loading" | "repos" | "analyzing" | "results";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+  },
+};
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -199,15 +224,15 @@ export default function Dashboard() {
   if (status === "loading") {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-gray-700 border-t-emerald-400 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
       {/* Step Indicator */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-4">
           {[
             { key: "repos", label: "Select Repos" },
@@ -218,35 +243,36 @@ export default function Dashboard() {
             const currentIndex = stepOrder.indexOf(step === "loading" ? "repos" : step);
             const thisIndex = i;
             const isActive = thisIndex <= currentIndex;
+            const isCompleted = thisIndex < currentIndex;
 
             return (
               <div key={key} className="flex items-center gap-4">
                 {i > 0 && (
                   <div
-                    className={`w-12 h-0.5 ${
-                      isActive ? "bg-emerald-400" : "bg-gray-700"
+                    className={`w-12 h-0.5 rounded-full transition-colors ${
+                      isActive
+                        ? "bg-gradient-to-r from-purple-500 to-fuchsia-500"
+                        : "bg-zinc-800"
                     }`}
                   />
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                       isActive
-                        ? "bg-emerald-400 text-gray-900"
-                        : "bg-gray-800 text-gray-500"
+                        ? "bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+                        : "bg-zinc-900 text-zinc-600 border border-white/5"
                     }`}
                   >
-                    {thisIndex < currentIndex ? (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                    {isCompleted ? (
+                      <Check className="w-4 h-4" strokeWidth={3} />
                     ) : (
                       i + 1
                     )}
                   </div>
                   <span
-                    className={`text-sm font-medium ${
-                      isActive ? "text-white" : "text-gray-500"
+                    className={`text-sm font-medium transition-colors ${
+                      isActive ? "text-white" : "text-zinc-600"
                     }`}
                   >
                     {label}
@@ -260,225 +286,257 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           {/* Usage Toggle */}
           {usage && usage.totalRequests > 0 && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { setShowUsage(!showUsage); setShowHistory(false); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 showUsage
-                  ? "bg-cyan-400 text-gray-900"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                  : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+              <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
               Usage
-            </button>
+            </motion.button>
           )}
 
           {/* History Toggle */}
           {history.length > 0 && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { setShowHistory(!showHistory); setShowUsage(false); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 showHistory
-                  ? "bg-emerald-400 text-gray-900"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                  : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <History className="w-4 h-4" strokeWidth={1.5} />
               History ({history.length})
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
 
       {/* History Panel */}
-      {showHistory && (
-        <div className="mb-8 bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold text-white">Past Analyses</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Click to load a previous analysis result
-            </p>
-          </div>
-          {loadingHistory ? (
-            <div className="p-8 flex justify-center">
-              <div className="w-8 h-8 border-4 border-gray-700 border-t-emerald-400 rounded-full animate-spin" />
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="mb-8 rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden"
+          >
+            <div className="p-5 border-b border-white/5">
+              <h2 className="text-lg font-bold text-white tracking-tight">Past Analyses</h2>
+              <p className="text-sm text-zinc-500 mt-1">
+                Click to load a previous analysis result
+              </p>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-700/50">
-              {history.map((historySession) => (
-                <div
-                  key={historySession.id}
-                  className="p-4 hover:bg-gray-700/30 transition-colors flex items-center justify-between gap-4"
-                >
-                  <button
-                    onClick={() => loadFromHistory(historySession)}
-                    className="flex-1 text-left"
+            {loadingHistory ? (
+              <div className="p-8 flex justify-center">
+                <div className="w-8 h-8 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {history.map((historySession) => (
+                  <div
+                    key={historySession.id}
+                    className="p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between gap-4"
                   >
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="text-sm text-gray-400">
-                        {formatDate(historySession.created_at)}
-                      </span>
-                      <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
-                        {historySession.generated_cvs.length} role{historySession.generated_cvs.length !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-300 line-clamp-1">
-                      {historySession.summary || "No summary"}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {historySession.generated_cvs.map((cv) => (
-                        <span
-                          key={cv.id}
-                          className="text-xs bg-emerald-400/10 text-emerald-400 px-2 py-0.5 rounded-full"
-                        >
-                          {cv.role_title}
+                    <button
+                      onClick={() => loadFromHistory(historySession)}
+                      className="flex-1 text-left"
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="text-sm text-zinc-500">
+                          {formatDate(historySession.created_at)}
                         </span>
-                      ))}
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => deleteSession(historySession.id)}
-                    className="p-2 text-gray-500 hover:text-red-400 transition-colors flex-shrink-0"
-                    title="Delete this analysis"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                        <span className="text-xs bg-white/5 text-zinc-400 px-2 py-0.5 rounded-full border border-white/5">
+                          {historySession.generated_cvs.length} role{historySession.generated_cvs.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-300 line-clamp-1">
+                        {historySession.summary || "No summary"}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {historySession.generated_cvs.map((cv) => (
+                          <span
+                            key={cv.id}
+                            className="text-xs bg-purple-500/10 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/20"
+                          >
+                            {cv.role_title}
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => deleteSession(historySession.id)}
+                      className="p-2 text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
+                      title="Delete this analysis"
+                    >
+                      <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+                    </motion.button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Usage Panel */}
-      {showUsage && usage && (
-        <div className="mb-8 bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold text-white">LLM Token Usage</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Cumulative usage across all analyses
-            </p>
-          </div>
+      <AnimatePresence>
+        {showUsage && usage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="mb-8 rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden"
+          >
+            <div className="p-5 border-b border-white/5">
+              <h2 className="text-lg font-bold text-white tracking-tight">LLM Token Usage</h2>
+              <p className="text-sm text-zinc-500 mt-1">
+                Cumulative usage across all analyses
+              </p>
+            </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4">
-            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Requests</p>
-              <p className="text-2xl font-bold text-white mt-1">{usage.totalRequests}</p>
-            </div>
-            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Tokens</p>
-              <p className="text-2xl font-bold text-white mt-1">
-                {usage.totalTokens.toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Prompt / Completion</p>
-              <p className="text-sm font-medium text-gray-300 mt-1">
-                <span className="text-cyan-400">{usage.totalPromptTokens.toLocaleString()}</span>
-                {" / "}
-                <span className="text-emerald-400">{usage.totalCompletionTokens.toLocaleString()}</span>
-              </p>
-            </div>
-            <div className="bg-gray-900/50 rounded-lg p-3 border border-gray-700/50">
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Estimated Cost</p>
-              <p className="text-2xl font-bold text-emerald-400 mt-1">
-                ${usage.totalCostUsd.toFixed(4)}
-              </p>
-            </div>
-          </div>
-
-          {/* Per-request breakdown */}
-          {usage.records.length > 0 && (
-            <div className="border-t border-gray-700/50">
-              <div className="px-4 py-3">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
-                  Request Log
-                </h3>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5">
+              <div className="rounded-xl bg-black p-4 border border-white/5">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Total Requests</p>
+                <p className="text-2xl font-extrabold text-white mt-1 tracking-tight">{usage.totalRequests}</p>
               </div>
-              <div className="max-h-60 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-gray-500 uppercase bg-gray-900/30 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Date</th>
-                      <th className="px-4 py-2 text-left">Model</th>
-                      <th className="px-4 py-2 text-right">Prompt</th>
-                      <th className="px-4 py-2 text-right">Completion</th>
-                      <th className="px-4 py-2 text-right">Total</th>
-                      <th className="px-4 py-2 text-right">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-700/30">
-                    {usage.records.map((record) => (
-                      <tr key={record.id} className="text-gray-300 hover:bg-gray-700/20">
-                        <td className="px-4 py-2 text-gray-400">
-                          {formatDate(record.createdAt)}
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className="text-xs bg-gray-700 px-2 py-0.5 rounded-full">
-                            {record.model.split("/").pop()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-right text-cyan-400">
-                          {record.promptTokens.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right text-emerald-400">
-                          {record.completionTokens.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right font-medium">
-                          {record.totalTokens.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          ${record.costUsd.toFixed(4)}
-                        </td>
+              <div className="rounded-xl bg-black p-4 border border-white/5">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Total Tokens</p>
+                <p className="text-2xl font-extrabold text-white mt-1 tracking-tight">
+                  {usage.totalTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-xl bg-black p-4 border border-white/5">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Prompt / Completion</p>
+                <p className="text-sm font-medium text-zinc-300 mt-2">
+                  <span className="text-blue-400">{usage.totalPromptTokens.toLocaleString()}</span>
+                  {" / "}
+                  <span className="text-purple-400">{usage.totalCompletionTokens.toLocaleString()}</span>
+                </p>
+              </div>
+              <div className="rounded-xl bg-black p-4 border border-white/5">
+                <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Estimated Cost</p>
+                <p className="text-2xl font-extrabold gradient-text-purple mt-1 tracking-tight">
+                  ${usage.totalCostUsd.toFixed(4)}
+                </p>
+              </div>
+            </div>
+
+            {/* Per-request breakdown */}
+            {usage.records.length > 0 && (
+              <div className="border-t border-white/5">
+                <div className="px-5 py-3">
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    Request Log
+                  </h3>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-xs text-zinc-600 uppercase bg-black/50 sticky top-0">
+                      <tr>
+                        <th className="px-5 py-2.5 text-left">Date</th>
+                        <th className="px-5 py-2.5 text-left">Model</th>
+                        <th className="px-5 py-2.5 text-right">Prompt</th>
+                        <th className="px-5 py-2.5 text-right">Completion</th>
+                        <th className="px-5 py-2.5 text-right">Total</th>
+                        <th className="px-5 py-2.5 text-right">Cost</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {usage.records.map((record) => (
+                        <tr key={record.id} className="text-zinc-400 hover:bg-white/[0.02]">
+                          <td className="px-5 py-2.5 text-zinc-500">
+                            {formatDate(record.createdAt)}
+                          </td>
+                          <td className="px-5 py-2.5">
+                            <span className="text-xs bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                              {record.model.split("/").pop()}
+                            </span>
+                          </td>
+                          <td className="px-5 py-2.5 text-right text-blue-400">
+                            {record.promptTokens.toLocaleString()}
+                          </td>
+                          <td className="px-5 py-2.5 text-right text-purple-400">
+                            {record.completionTokens.toLocaleString()}
+                          </td>
+                          <td className="px-5 py-2.5 text-right font-medium text-white">
+                            {record.totalTokens.toLocaleString()}
+                          </td>
+                          <td className="px-5 py-2.5 text-right">
+                            ${record.costUsd.toFixed(4)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Error Display */}
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl p-4 mb-6">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-500/5 border border-red-500/20 text-red-400 rounded-2xl p-4 mb-6"
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+              <span className="text-sm">{error}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Loading State */}
       {step === "loading" && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 border-4 border-gray-700 border-t-emerald-400 rounded-full animate-spin mb-6" />
-          <p className="text-gray-400 text-lg">{fetchProgress}</p>
-          <p className="text-gray-500 text-sm mt-2">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-24"
+        >
+          <div className="relative mb-8">
+            <div className="w-16 h-16 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+            </div>
+          </div>
+          <p className="text-zinc-300 text-lg font-medium">{fetchProgress}</p>
+          <p className="text-zinc-600 text-sm mt-2">
             Fetching languages and README content for each repo...
           </p>
-        </div>
+        </motion.div>
       )}
 
       {/* Repo Selection */}
       {step === "repos" && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">
                 Your Repositories
               </h1>
-              <p className="text-gray-400 mt-1">
+              <p className="text-zinc-500 mt-1.5 text-sm">
                 {repos.length} repos found — {selectedRepos.size} selected for
                 analysis
               </p>
@@ -486,123 +544,140 @@ export default function Dashboard() {
             <div className="flex items-center gap-3">
               <button
                 onClick={selectAll}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+                className="text-sm text-zinc-500 hover:text-white transition-colors"
               >
                 Select All
               </button>
-              <span className="text-gray-600">|</span>
+              <span className="text-zinc-800">|</span>
               <button
                 onClick={deselectAll}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+                className="text-sm text-zinc-500 hover:text-white transition-colors"
               >
                 Deselect All
               </button>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={analyzeRepos}
                 disabled={selectedRepos.size === 0}
-                className="ml-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-700 disabled:text-gray-500 text-white px-6 py-2.5 rounded-xl font-semibold transition-colors flex items-center gap-2"
+                className="ml-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(168,85,247,0.15)] disabled:shadow-none text-sm"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <Cpu className="w-4 h-4" strokeWidth={2} />
                 Analyze with AI ({selectedRepos.size})
-              </button>
+              </motion.button>
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+          >
             {repos.map((repo) => (
-              <RepoCard
-                key={repo.id}
-                repo={repo}
-                selected={selectedRepos.has(repo.id)}
-                onToggle={() => toggleRepo(repo.id)}
-              />
+              <motion.div key={repo.id} variants={fadeUp}>
+                <RepoCard
+                  repo={repo}
+                  selected={selectedRepos.has(repo.id)}
+                  onToggle={() => toggleRepo(repo.id)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {repos.length === 0 && !error && (
-            <div className="text-center py-20">
-              <p className="text-gray-400 text-lg">
-                No repositories found. Make sure your GitHub account has
-                repositories.
+            <div className="text-center py-24">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-white/5 flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="w-8 h-8 text-zinc-600" strokeWidth={1.5} />
+              </div>
+              <p className="text-zinc-400 text-lg font-medium">
+                No repositories found
+              </p>
+              <p className="text-zinc-600 text-sm mt-2">
+                Make sure your GitHub account has repositories.
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Analyzing State */}
       {step === "analyzing" && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative mb-8">
-            <div className="w-20 h-20 border-4 border-gray-700 border-t-emerald-400 rounded-full animate-spin" />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-24"
+        >
+          <div className="relative mb-10">
+            {/* Outer glow ring */}
+            <div className="absolute inset-0 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
+            <div className="relative w-24 h-24 border-2 border-zinc-800 border-t-purple-500 border-r-fuchsia-500 rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+              <Cpu className="w-8 h-8 text-purple-400" strokeWidth={1.5} />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">
             AI Agent is Analyzing...
           </h2>
-          <p className="text-gray-400 text-center max-w-md">
+          <p className="text-zinc-500 text-center max-w-md text-sm leading-relaxed">
             Gemini 3 Flash is reviewing your {selectedRepos.size} repositories,
             identifying career roles, and generating tailored CVs. This may take
             a minute.
           </p>
-          <div className="flex items-center gap-2 mt-6 text-sm text-gray-500">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <div className="flex items-center gap-2.5 mt-8 text-sm text-zinc-600">
+            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
             Processing with OpenRouter AI
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Results */}
       {step === "results" && analysis && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl font-extrabold text-white tracking-tight">
                 Your Tailored CVs
               </h1>
-              <p className="text-gray-400 mt-1">{analysis.summary}</p>
+              <p className="text-zinc-500 mt-1.5 text-sm">{analysis.summary}</p>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setStep("repos")}
-              className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+              className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 hover:border-white/10 bg-zinc-950"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+              <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
               Back to repos
-            </button>
+            </motion.button>
           </div>
 
           {/* Token usage for this analysis */}
           {analysis.tokenUsage && (
-            <div className="mb-6 flex items-center gap-4 text-xs text-gray-500">
+            <div className="mb-6 flex items-center gap-4 text-xs text-zinc-600">
               <div className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />
                 <span>
                   {analysis.tokenUsage.totalTokens.toLocaleString()} tokens
                 </span>
               </div>
-              <span className="text-gray-700">|</span>
+              <span className="text-zinc-800">|</span>
               <span>
-                <span className="text-cyan-400/70">{analysis.tokenUsage.promptTokens.toLocaleString()}</span> in /
+                <span className="text-blue-400/70">{analysis.tokenUsage.promptTokens.toLocaleString()}</span> in /
                 {" "}
-                <span className="text-emerald-400/70">{analysis.tokenUsage.completionTokens.toLocaleString()}</span> out
+                <span className="text-purple-400/70">{analysis.tokenUsage.completionTokens.toLocaleString()}</span> out
               </span>
-              <span className="text-gray-700">|</span>
+              <span className="text-zinc-800">|</span>
               <span>{analysis.tokenUsage.model.split("/").pop()}</span>
             </div>
           )}
 
           <CVDisplay roles={analysis.roles} />
-        </div>
+        </motion.div>
       )}
     </main>
   );

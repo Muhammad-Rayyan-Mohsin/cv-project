@@ -1,102 +1,229 @@
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
+import { motion } from "framer-motion";
+import {
+  Github,
+  Cpu,
+  FileText,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  Shield,
+  Clock,
+} from "lucide-react";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+};
 
 export default function Home() {
   const { status } = useSession();
 
   return (
-    <main className="min-h-[calc(100vh-4rem)]">
-      {/* Hero */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 px-4 py-1.5 rounded-full text-sm mb-8">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Powered by AI + GitHub
-            </div>
-            <h1 className="text-5xl sm:text-6xl font-bold text-white mb-6 leading-tight">
-              Turn Your GitHub Into
-              <span className="block bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                Career-Ready CVs
+    <main className="min-h-screen pt-16">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        {/* Ambient Glows */}
+        <div className="ambient-glow ambient-glow-purple w-[600px] h-[600px] -top-40 -left-40" />
+        <div className="ambient-glow ambient-glow-blue w-[500px] h-[500px] top-20 right-0" />
+        <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] bottom-0 left-1/3" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32">
+          <motion.div
+            className="text-center max-w-4xl mx-auto"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+          >
+            {/* Badge */}
+            <motion.div variants={fadeUp} className="mb-8">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-1.5 text-xs font-medium text-zinc-400">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" strokeWidth={2} />
+                Powered by AI + GitHub
               </span>
-            </h1>
-            <p className="text-xl text-gray-400 mb-10 leading-relaxed">
-              Connect your GitHub account, and our AI agent will analyze every
-              project — identifying skills, patterns, and expertise to
-              automatically generate tailored CVs for each career role your
-              portfolio supports.
-            </p>
+            </motion.div>
 
-            {status === "loading" ? (
-              <div className="inline-block w-12 h-12 border-4 border-gray-700 border-t-emerald-400 rounded-full animate-spin" />
-            ) : (
-              <button
-                onClick={() => signIn("github")}
-                className="inline-flex items-center gap-3 bg-white text-gray-900 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all hover:scale-105 shadow-lg shadow-white/10"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                </svg>
-                Sign in with GitHub to Start
-              </button>
-            )}
-          </div>
+            {/* Heading */}
+            <motion.h1
+              variants={fadeUp}
+              className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none tracking-tight mb-6"
+            >
+              Turn Your GitHub Into{" "}
+              <span className="gradient-text-purple">Career-Ready CVs</span>
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              variants={fadeUp}
+              className="text-lg sm:text-xl text-zinc-400 font-normal leading-relaxed max-w-2xl mx-auto mb-12"
+            >
+              Connect your GitHub account, and our AI agent analyzes every
+              project — identifying skills, patterns, and expertise to generate
+              tailored CVs for each career role.
+            </motion.p>
+
+            {/* CTA */}
+            <motion.div variants={fadeUp}>
+              {status === "loading" ? (
+                <div className="inline-block w-10 h-10 border-2 border-zinc-800 border-t-purple-500 rounded-full animate-spin" />
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => signIn("github")}
+                  className="group inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-zinc-100 transition-all shadow-[0_0_60px_rgba(168,85,247,0.15)]"
+                >
+                  <Github className="w-5 h-5" strokeWidth={2} />
+                  Sign in with GitHub
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" strokeWidth={2} />
+                </motion.button>
+              )}
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* Features */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="w-12 h-12 bg-emerald-400/10 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
+      {/* Bento Grid Features */}
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={staggerContainer}
+        >
+          {/* Card 1 - Large */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 md:col-span-2 group card-shimmer"
+          >
+            <div className="ambient-glow ambient-glow-purple w-[200px] h-[200px] -top-20 -right-20 opacity-10" />
+            <div className="relative">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6">
+                <Github className="w-6 h-6 text-purple-400" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+                Deep GitHub Integration
+              </h3>
+              <p className="text-zinc-400 text-sm leading-relaxed max-w-md">
+                Securely connect your GitHub and fetch all repositories including
+                languages, topics, and README content for comprehensive analysis.
+                Works with both public and private repos.
+              </p>
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
-              GitHub Integration
-            </h3>
-            <p className="text-gray-400">
-              Securely connect your GitHub and fetch all repositories including
-              languages, topics, and README content for deep analysis.
-            </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="w-12 h-12 bg-blue-400/10 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+          {/* Card 2 */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
+              <Cpu className="w-6 h-6 text-blue-400" strokeWidth={1.5} />
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
               AI-Powered Analysis
             </h3>
-            <p className="text-gray-400">
+            <p className="text-zinc-400 text-sm leading-relaxed">
               Gemini 3 Flash intelligently categorizes your projects into career
-              roles like ML Engineer, Full-Stack Developer, DevOps, and more.
+              roles like ML Engineer, Full-Stack, DevOps, and more.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="w-12 h-12 bg-purple-400/10 rounded-lg flex items-center justify-center mb-4">
-              <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          {/* Card 3 */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6">
+              <FileText className="w-6 h-6 text-orange-400" strokeWidth={1.5} />
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
               Tailored CVs
             </h3>
-            <p className="text-gray-400">
+            <p className="text-zinc-400 text-sm leading-relaxed">
               Get professionally written, role-specific CVs highlighting the
               right projects, skills, and experience for each career path.
             </p>
-          </div>
-        </div>
-      </div>
+          </motion.div>
+
+          {/* Card 4 */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center mb-6">
+              <Zap className="w-6 h-6 text-fuchsia-400" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+              Blazing Fast
+            </h3>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Analyze dozens of repositories and generate multiple CVs in under
+              a minute with our optimized AI pipeline.
+            </p>
+          </motion.div>
+
+          {/* Card 5 - Large */}
+          <motion.div
+            variants={fadeUp}
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 md:col-span-2 lg:col-span-1 group card-shimmer"
+          >
+            <div className="flex gap-6">
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
+                  <Shield className="w-6 h-6 text-emerald-400" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+                  Secure & Private
+                </h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  Your data is processed securely. We only read repo metadata —
+                  no code is stored or shared.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* Stats Row */}
+        <motion.div
+          className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+        >
+          {[
+            { label: "Response Time", value: "<60s", icon: Clock },
+            { label: "Languages", value: "20+", icon: Cpu },
+            { label: "Career Roles", value: "Auto", icon: FileText },
+            { label: "Cost", value: "Free", icon: Sparkles },
+          ].map(({ label, value, icon: Icon }) => (
+            <motion.div
+              key={label}
+              variants={fadeUp}
+              className="text-center p-6 rounded-2xl border border-white/5 bg-zinc-950"
+            >
+              <Icon className="w-5 h-5 text-zinc-500 mx-auto mb-3" strokeWidth={1.5} />
+              <p className="text-2xl font-extrabold text-white tracking-tight">{value}</p>
+              <p className="text-xs text-zinc-500 mt-1 font-medium uppercase tracking-wider">
+                {label}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
     </main>
   );
 }
