@@ -34,9 +34,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] flex items-center">
         {/* Ambient Glows */}
-        <div className="ambient-glow ambient-glow-orange w-[600px] h-[600px] -top-40 -left-40" />
-        <div className="ambient-glow ambient-glow-purple w-[400px] h-[400px] top-20 right-0 opacity-10" />
-        <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] bottom-0 right-1/4 opacity-10" />
+        <div className="ambient-glow ambient-glow-orange w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] -top-40 -left-40" />
+        <div className="ambient-glow ambient-glow-purple w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] top-20 right-0 opacity-10" />
+        <div className="ambient-glow ambient-glow-orange w-[150px] h-[150px] sm:w-[300px] sm:h-[300px] bottom-0 right-1/4 opacity-10" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div
@@ -73,7 +73,7 @@ export default function Home() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => signIn("github")}
-                  className="group inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-zinc-100 transition-all shadow-[0_0_60px_rgba(249,115,22,0.15)]"
+                  className="group inline-flex items-center gap-3 bg-white text-black px-6 py-3 sm:px-8 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:bg-zinc-100 transition-all shadow-[0_0_60px_rgba(249,115,22,0.15)]"
                 >
                   <Github className="w-5 h-5" strokeWidth={2} />
                   Sign in with GitHub
@@ -86,7 +86,7 @@ export default function Home() {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-32">
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           initial="hidden"
@@ -97,7 +97,7 @@ export default function Home() {
           {/* Card 1 - Large */}
           <motion.div
             variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 md:col-span-2 group card-shimmer"
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-5 sm:p-8 md:col-span-2 group card-shimmer"
           >
             <div className="ambient-glow ambient-glow-orange w-[200px] h-[200px] -top-20 -right-20 opacity-10" />
             <div className="relative">
@@ -118,7 +118,7 @@ export default function Home() {
           {/* Card 2 */}
           <motion.div
             variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-5 sm:p-8 group card-shimmer"
           >
             <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6">
               <Cpu className="w-6 h-6 text-blue-400" strokeWidth={1.5} />
@@ -135,7 +135,7 @@ export default function Home() {
           {/* Card 3 */}
           <motion.div
             variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-5 sm:p-8 group card-shimmer"
           >
             <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6">
               <FileText className="w-6 h-6 text-orange-400" strokeWidth={1.5} />
@@ -152,7 +152,7 @@ export default function Home() {
           {/* Card 4 */}
           <motion.div
             variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 group card-shimmer"
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-5 sm:p-8 group card-shimmer"
           >
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
               <Zap className="w-6 h-6 text-amber-400" strokeWidth={1.5} />
@@ -169,7 +169,7 @@ export default function Home() {
           {/* Card 5 - Large */}
           <motion.div
             variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-8 md:col-span-2 lg:col-span-1 group card-shimmer"
+            className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 p-5 sm:p-8 md:col-span-2 lg:col-span-1 group card-shimmer"
           >
             <div className="flex gap-6">
               <div>
@@ -190,7 +190,7 @@ export default function Home() {
 
         {/* Stats Row */}
         <motion.div
-          className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4"
+          className="mt-12 sm:mt-20 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
@@ -205,7 +205,7 @@ export default function Home() {
             <motion.div
               key={label}
               variants={fadeUp}
-              className="text-center p-6 rounded-2xl border border-white/5 bg-zinc-950"
+              className="text-center p-4 sm:p-6 rounded-2xl border border-white/5 bg-zinc-950"
             >
               <Icon className="w-5 h-5 text-zinc-500 mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-2xl font-extrabold text-white tracking-tight">{value}</p>

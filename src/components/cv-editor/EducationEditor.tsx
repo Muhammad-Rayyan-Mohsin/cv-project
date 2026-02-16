@@ -54,7 +54,7 @@ export default function EducationEditor({
             className="rounded-xl bg-black/40 border border-white/[0.04] p-3 space-y-2"
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 grid grid-cols-2 gap-2">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input
                   type="text"
                   value={edu.degree}

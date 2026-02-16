@@ -6,11 +6,12 @@ export default function CVPreview({ cv }: { cv: StructuredCV }) {
   const pd = cv.personalDetails;
 
   return (
-    <div className="bg-white text-black rounded-lg p-8 shadow-lg max-w-[210mm] mx-auto text-[10.5pt] leading-[1.35] font-[system-ui]">
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
+    <div className="bg-white text-black rounded-lg p-4 sm:p-8 shadow-lg max-w-[210mm] mx-auto text-[9pt] sm:text-[10.5pt] leading-[1.35] font-[system-ui] min-w-[320px]">
       {/* Header */}
       {pd.fullName && (
         <div className="mb-3 pb-2 border-b border-gray-300">
-          <h1 className="text-[20pt] font-bold text-black tracking-tight leading-tight">
+          <h1 className="text-[16pt] sm:text-[20pt] font-bold text-black tracking-tight leading-tight">
             {pd.fullName}
           </h1>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-1">
@@ -170,6 +171,7 @@ export default function CVPreview({ cv }: { cv: StructuredCV }) {
           </ul>
         </div>
       )}
+    </div>
     </div>
   );
 }

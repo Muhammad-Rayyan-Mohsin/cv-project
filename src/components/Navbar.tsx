@@ -26,39 +26,42 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {status === "loading" ? (
               <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" />
             ) : session ? (
               <>
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-full hover:bg-white/5"
+                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors p-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-white/5"
+                  title="Dashboard"
                 >
                   <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
-                  Dashboard
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Link>
                 <Link
                   href="/dashboard/profile"
-                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-full hover:bg-white/5"
+                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors p-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-white/5"
+                  title="Profile"
                 >
                   <UserCircle className="w-4 h-4" strokeWidth={1.5} />
-                  Profile
+                  <span className="hidden sm:inline">Profile</span>
                 </Link>
-                <div className="flex items-center gap-3 pl-2 border-l border-white/10">
+                <div className="flex items-center gap-2 sm:gap-3 pl-2 border-l border-white/10">
                   <img
                     src={session.user?.image || ""}
                     alt=""
                     className="w-7 h-7 rounded-full ring-1 ring-white/10"
                   />
-                  <span className="text-zinc-400 text-sm hidden sm:block">
+                  <span className="text-zinc-400 text-sm hidden md:block">
                     {session.user?.name}
                   </span>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="text-zinc-500 hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-white/5"
+                    className="text-zinc-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
+                    title="Sign out"
                   >
                     <LogOut className="w-4 h-4" strokeWidth={1.5} />
                   </motion.button>

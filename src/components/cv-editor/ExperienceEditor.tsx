@@ -188,7 +188,7 @@ export default function ExperienceEditor({
             {/* Expanded Content */}
             {expanded.has(entry.id) && (
               <div className="px-3 pb-3 space-y-3 border-t border-white/[0.04]">
-                <div className="grid grid-cols-2 gap-2 pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-3">
                   <input
                     type="text"
                     value={entry.title}

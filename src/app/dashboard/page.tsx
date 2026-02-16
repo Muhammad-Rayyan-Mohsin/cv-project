@@ -234,8 +234,8 @@ export default function Dashboard() {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
       {/* Step Indicator */}
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 sm:mb-10">
+        <div className="flex items-center gap-2 sm:gap-4">
           {[
             { key: "repos", label: "Select Repos" },
             { key: "analyzing", label: "AI Analysis" },
@@ -248,32 +248,32 @@ export default function Dashboard() {
             const isCompleted = thisIndex < currentIndex;
 
             return (
-              <div key={key} className="flex items-center gap-4">
+              <div key={key} className="flex items-center gap-2 sm:gap-4">
                 {i > 0 && (
                   <div
-                    className={`w-12 h-0.5 rounded-full transition-colors ${
+                    className={`w-6 sm:w-12 h-0.5 rounded-full transition-colors ${
                       isActive
                         ? "bg-gradient-to-r from-orange-500 to-amber-500"
                         : "bg-zinc-800"
                     }`}
                   />
                 )}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1.5 sm:gap-2.5">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all ${
                       isActive
                         ? "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]"
                         : "bg-zinc-900 text-zinc-600 border border-white/5"
                     }`}
                   >
                     {isCompleted ? (
-                      <Check className="w-4 h-4" strokeWidth={3} />
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={3} />
                     ) : (
                       i + 1
                     )}
                   </div>
                   <span
-                    className={`text-sm font-medium transition-colors ${
+                    className={`text-xs sm:text-sm font-medium transition-colors hidden sm:inline ${
                       isActive ? "text-white" : "text-zinc-600"
                     }`}
                   >
@@ -292,14 +292,14 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => { setShowUsage(!showUsage); setShowHistory(false); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                 showUsage
                   ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                   : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
               <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
-              Usage
+              <span className="hidden sm:inline">Usage</span>
             </motion.button>
           )}
 
@@ -309,14 +309,15 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => { setShowHistory(!showHistory); setShowUsage(false); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                 showHistory
                   ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
                   : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
               }`}
             >
               <History className="w-4 h-4" strokeWidth={1.5} />
-              History ({history.length})
+              <span className="hidden sm:inline">History ({history.length})</span>
+              <span className="sm:hidden">{history.length}</span>
             </motion.button>
           )}
         </div>
@@ -443,39 +444,39 @@ export default function Dashboard() {
                     Request Log
                   </h3>
                 </div>
-                <div className="max-h-60 overflow-y-auto">
-                  <table className="w-full text-sm">
+                <div className="max-h-60 overflow-auto">
+                  <table className="w-full text-sm min-w-[600px]">
                     <thead className="text-xs text-zinc-600 uppercase bg-black/50 sticky top-0">
                       <tr>
-                        <th className="px-5 py-2.5 text-left">Date</th>
-                        <th className="px-5 py-2.5 text-left">Model</th>
-                        <th className="px-5 py-2.5 text-right">Prompt</th>
-                        <th className="px-5 py-2.5 text-right">Completion</th>
-                        <th className="px-5 py-2.5 text-right">Total</th>
-                        <th className="px-5 py-2.5 text-right">Cost</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-left">Date</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-left">Model</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-right">Prompt</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-right">Completion</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-right">Total</th>
+                        <th className="px-3 sm:px-5 py-2.5 text-right">Cost</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       {usage.records.map((record) => (
                         <tr key={record.id} className="text-zinc-400 hover:bg-white/[0.02]">
-                          <td className="px-5 py-2.5 text-zinc-500">
+                          <td className="px-3 sm:px-5 py-2.5 text-zinc-500 whitespace-nowrap">
                             {formatDate(record.createdAt)}
                           </td>
-                          <td className="px-5 py-2.5">
+                          <td className="px-3 sm:px-5 py-2.5">
                             <span className="text-xs bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                               {record.model.split("/").pop()}
                             </span>
                           </td>
-                          <td className="px-5 py-2.5 text-right text-blue-400">
+                          <td className="px-3 sm:px-5 py-2.5 text-right text-blue-400">
                             {record.promptTokens.toLocaleString()}
                           </td>
-                          <td className="px-5 py-2.5 text-right text-orange-400">
+                          <td className="px-3 sm:px-5 py-2.5 text-right text-orange-400">
                             {record.completionTokens.toLocaleString()}
                           </td>
-                          <td className="px-5 py-2.5 text-right font-medium text-white">
+                          <td className="px-3 sm:px-5 py-2.5 text-right font-medium text-white">
                             {record.totalTokens.toLocaleString()}
                           </td>
-                          <td className="px-5 py-2.5 text-right">
+                          <td className="px-3 sm:px-5 py-2.5 text-right">
                             ${record.costUsd.toFixed(4)}
                           </td>
                         </tr>
@@ -533,12 +534,12 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 Your Repositories
               </h1>
-              <p className="text-zinc-500 mt-1.5 text-sm">
+              <p className="text-zinc-500 mt-1 sm:mt-1.5 text-sm">
                 {repos.length} repos found — {selectedRepos.size} selected for
                 analysis
               </p>
@@ -562,10 +563,11 @@ export default function Dashboard() {
                 whileTap={{ scale: 0.97 }}
                 onClick={analyzeRepos}
                 disabled={selectedRepos.size === 0}
-                className="ml-4 bg-gradient-to-r from-orange-500 to-amber-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(249,115,22,0.15)] disabled:shadow-none text-sm"
+                className="ml-2 sm:ml-4 bg-gradient-to-r from-orange-500 to-amber-500 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white px-4 sm:px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(249,115,22,0.15)] disabled:shadow-none text-sm"
               >
                 <Cpu className="w-4 h-4" strokeWidth={2} />
-                Analyze with AI ({selectedRepos.size})
+                <span className="hidden sm:inline">Analyze with AI ({selectedRepos.size})</span>
+                <span className="sm:hidden">Analyze ({selectedRepos.size})</span>
               </motion.button>
             </div>
           </div>
@@ -640,18 +642,18 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 Your Tailored CVs
               </h1>
-              <p className="text-zinc-500 mt-1.5 text-sm">{analysis.summary}</p>
+              <p className="text-zinc-500 mt-1 sm:mt-1.5 text-sm">{analysis.summary}</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setStep("repos")}
-              className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 hover:border-white/10 bg-zinc-950"
+              className="self-start text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 hover:border-white/10 bg-zinc-950 shrink-0"
             >
               <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
               Back to repos
@@ -660,7 +662,7 @@ export default function Dashboard() {
 
           {/* Token usage for this analysis */}
           {analysis.tokenUsage && (
-            <div className="mb-6 flex items-center gap-4 text-xs text-zinc-600">
+            <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-zinc-600">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5" strokeWidth={1.5} />
                 <span>

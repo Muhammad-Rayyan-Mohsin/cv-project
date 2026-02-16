@@ -166,17 +166,17 @@ export default function CVDisplay({
           className="rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden"
         >
           {/* Header */}
-          <div className="p-6 border-b border-white/5">
-            <div className="flex items-start justify-between">
+          <div className="p-4 sm:p-6 border-b border-white/5">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
                   {current.role}
                 </h2>
                 <p className="text-zinc-400 text-sm mt-1 leading-relaxed">
                   {current.description}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2 shrink-0">
                 {hasStructured && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -227,7 +227,7 @@ export default function CVDisplay({
           </div>
 
           {/* Skills */}
-          <div className="px-6 py-4 border-b border-white/5">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
               Key Skills
             </h3>
@@ -244,7 +244,7 @@ export default function CVDisplay({
           </div>
 
           {/* Matching Repos */}
-          <div className="px-6 py-4 border-b border-white/5">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
               Matching Repositories ({current.matchingRepos.length})
             </h3>
@@ -269,7 +269,7 @@ export default function CVDisplay({
           </div>
 
           {/* CV Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">
               Generated CV
             </h3>
