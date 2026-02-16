@@ -127,6 +127,7 @@ export default function CVDisplay({
         </div>
 
         <CVEditor
+          key={activeRole}
           initialData={mergedCv}
           cvId={cvIds?.[activeRole]}
           roleName={current.role}
