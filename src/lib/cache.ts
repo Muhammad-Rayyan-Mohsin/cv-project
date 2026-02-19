@@ -102,6 +102,8 @@ export const CacheKeys = {
   repos: (userId: string) => `repos:${userId}`,
   history: (userId: string) => `history:${userId}`,
   usage: (userId: string) => `usage:${userId}`,
+  behance: (userId: string, behanceUsername: string) =>
+    `behance:${userId}:${behanceUsername}`,
 } as const;
 
 // TTLs in seconds
@@ -112,4 +114,6 @@ export const CacheTTL = {
   HISTORY: 60,
   /** Usage stats: 60 seconds (changes on new analysis) */
   USAGE: 60,
+  /** Behance portfolio: 10 minutes (external data, changes infrequently) */
+  BEHANCE: 10 * 60,
 } as const;

@@ -1,8 +1,9 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { EducationEntry, ExperienceEntry } from "@/lib/cv-types";
 import {
   Save,
@@ -18,6 +19,10 @@ import {
   Briefcase,
   ArrowLeft,
   Check,
+  AlertCircle,
+  Loader2,
+  Link2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -27,7 +32,23 @@ const fadeUp = {
 };
 
 export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen pt-24 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -41,11 +62,108 @@ export default function ProfilePage() {
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [workExperience, setWorkExperience] = useState<ExperienceEntry[]>([]);
 
+  // LinkedIn integration state
+  const [linkedinConfigured, setLinkedinConfigured] = useState(false);
+  const [linkedinImporting, setLinkedinImporting] = useState(false);
+  const [linkedinToast, setLinkedinToast] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+  const linkedinHandled = useRef(false);
+  const profileLoaded = useRef(false);
+  const pendingLinkedinImport = useRef(false);
+
+  // Check if LinkedIn integration is configured
+  useEffect(() => {
+    fetch("/api/linkedin/status")
+      .then((res) => res.json())
+      .then((data) => setLinkedinConfigured(data.configured === true))
+      .catch(() => setLinkedinConfigured(false));
+  }, []);
+
+  // Handle LinkedIn callback params
+  useEffect(() => {
+    if (linkedinHandled.current) return;
+    const linkedinParam = searchParams.get("linkedin");
+    if (!linkedinParam) return;
+    linkedinHandled.current = true;
+
+    // Clean up URL params
+    router.replace("/dashboard/profile", { scroll: false });
+
+    if (linkedinParam === "connected") {
+      // If profile already loaded, import immediately; otherwise mark as pending
+      if (profileLoaded.current) {
+        importLinkedInData();
+      } else {
+        pendingLinkedinImport.current = true;
+      }
+    } else if (linkedinParam === "error") {
+      const msg = searchParams.get("message") || "Failed to connect LinkedIn";
+      showLinkedinToast("error", msg);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const showLinkedinToast = useCallback(
+    (type: "success" | "error" | "info", message: string) => {
+      setLinkedinToast({ type, message });
+      setTimeout(() => setLinkedinToast(null), 5000);
+    },
+    []
+  );
+
+  const importLinkedInData = useCallback(async (existingProfile?: {
+    fullName: string;
+    email: string;
+  }) => {
+    setLinkedinImporting(true);
+    try {
+      const res = await fetch("/api/linkedin/profile");
+      if (!res.ok) {
+        throw new Error("No LinkedIn data available");
+      }
+      const data = await res.json();
+      const p = data.profile;
+
+      // Compare against the loaded profile data (not stale closure state)
+      const currentName = existingProfile?.fullName ?? fullName;
+      const currentEmail = existingProfile?.email ?? email;
+
+      // Only fill empty fields — preserve existing manual entries
+      let fieldsImported = 0;
+      if (!currentName && p.fullName) {
+        setFullName(p.fullName);
+        fieldsImported++;
+      }
+      if (!currentEmail && p.email) {
+        setEmail(p.email);
+        fieldsImported++;
+      }
+
+      if (fieldsImported > 0) {
+        showLinkedinToast(
+          "success",
+          `Imported ${fieldsImported} field${fieldsImported > 1 ? "s" : ""} from LinkedIn. Review and save your profile.`
+        );
+      } else {
+        showLinkedinToast(
+          "info",
+          "LinkedIn connected, but all fields already have data. Your existing information was preserved."
+        );
+      }
+    } catch (err) {
+      console.error("LinkedIn import error:", err);
+      showLinkedinToast("error", "Failed to import LinkedIn profile data.");
+    } finally {
+      setLinkedinImporting(false);
+    }
+  }, [fullName, email, showLinkedinToast]);
+
   useEffect(() => {
     if (status === "authenticated") {
       fetchProfile();
     }
-  }, [status]);
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProfile = async () => {
     try {
@@ -73,9 +191,27 @@ export default function ProfilePage() {
             technologies: e.technologies || [],
           }))
         );
+
+        profileLoaded.current = true;
+
+        // If LinkedIn OAuth completed before profile loaded, import now
+        if (pendingLinkedinImport.current) {
+          pendingLinkedinImport.current = false;
+          importLinkedInData({
+            fullName: p.fullName || "",
+            email: p.email || "",
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to fetch profile:", err);
+      profileLoaded.current = true;
+
+      // Still process pending LinkedIn import even if profile fetch fails
+      if (pendingLinkedinImport.current) {
+        pendingLinkedinImport.current = false;
+        importLinkedInData();
+      }
     } finally {
       setLoading(false);
     }
@@ -254,6 +390,86 @@ export default function ProfilePage() {
             Your personal details will be used in generated CVs.
           </p>
         </motion.div>
+
+        {/* LinkedIn Integration Banner */}
+        {linkedinConfigured && (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="rounded-2xl bg-gradient-to-r from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/20 p-5 mb-6"
+          >
+            <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#0A66C2]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Linkedin className="w-4.5 h-4.5 text-[#0A66C2]" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">
+                    Import from LinkedIn
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Connect your LinkedIn account to auto-fill your name and email.
+                    All imported data is fully editable.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/api/linkedin/auth"
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all flex-shrink-0 ${
+                  linkedinImporting
+                    ? "bg-[#0A66C2]/20 text-[#0A66C2]/60 pointer-events-none"
+                    : "bg-[#0A66C2] text-white hover:bg-[#094d92] active:scale-[0.97]"
+                }`}
+              >
+                {linkedinImporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4" strokeWidth={2} />
+                    Connect LinkedIn
+                  </>
+                )}
+              </a>
+            </div>
+          </motion.div>
+        )}
+
+        {/* LinkedIn Toast Notification */}
+        <AnimatePresence>
+          {linkedinToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`rounded-xl border p-4 mb-6 flex items-start gap-3 ${
+                linkedinToast.type === "success"
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                  : linkedinToast.type === "error"
+                  ? "bg-red-500/10 border-red-500/20 text-red-400"
+                  : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+              }`}
+            >
+              {linkedinToast.type === "success" ? (
+                <Check className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={2} />
+              ) : linkedinToast.type === "error" ? (
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={2} />
+              ) : (
+                <Linkedin className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={2} />
+              )}
+              <p className="text-sm flex-1">{linkedinToast.message}</p>
+              <button
+                onClick={() => setLinkedinToast(null)}
+                className="p-0.5 hover:opacity-70 transition-opacity flex-shrink-0"
+              >
+                <X className="w-3.5 h-3.5" strokeWidth={2} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Personal Details */}
         <motion.div

@@ -124,23 +124,26 @@ function cleanXml(raw: string): string {
 // Agent prompts
 // ---------------------------------------------------------------------------
 
-const CATEGORIZER_SYSTEM = `You are an expert career advisor. You analyze GitHub repositories to understand a developer's skills and experience, then categorize their projects into distinct career roles.
+const CATEGORIZER_SYSTEM = `You are an expert career advisor. You analyze GitHub repositories and creative portfolios (such as Behance) to understand a professional's skills and experience, then categorize their projects into distinct career roles.
 
 Your analysis should be thorough and intelligent:
 - Look at the languages, frameworks, topics, README content, and project descriptions
+- For Behance projects, consider the creative fields, tools used (e.g., Photoshop, Figma, Illustrator), tags, and engagement metrics
 - Identify patterns that indicate expertise in specific career domains
 - Group related projects under the most fitting career role
 - A single project can appear under multiple roles if relevant
+- Creative/design work from Behance is equally valuable as code from GitHub
 
 You MUST respond with valid XML only. No markdown, no code fences, no prose outside the XML.`;
 
-const CV_WRITER_SYSTEM = `You are an expert CV writer. You generate professional, ATS-friendly structured CV content tailored to a specific career role based on a developer's GitHub projects.
+const CV_WRITER_SYSTEM = `You are an expert CV writer. You generate professional, ATS-friendly structured CV content tailored to a specific career role based on a professional's GitHub projects and creative portfolio (such as Behance).
 
 Your writing should:
 - Focus on achievements and impact, not just descriptions
-- Use strong action verbs and quantify where possible (users, performance, scale)
+- Use strong action verbs and quantify where possible (users, performance, scale, engagement)
 - Be concise yet detailed — each bullet should demonstrate clear value
 - Tailor skill categories and language to the specific career role
+- For design/creative work, highlight tools, methodologies, brand impact, and user engagement
 
 You MUST respond with valid XML only. No markdown, no code fences, no prose outside the XML.`;
 
@@ -155,7 +158,7 @@ export async function POST(request: Request) {
   }
 
   const MAX_REPOS = 50;
-  const { repos, userName, userBio } = await request.json();
+  const { repos, userName, userBio, behanceProjects } = await request.json();
 
   if (!repos || !Array.isArray(repos) || repos.length === 0) {
     return NextResponse.json({ error: "No repos provided" }, { status: 400 });
@@ -195,13 +198,36 @@ export async function POST(request: Request) {
     // AGENT 1 — Categorizer
     // -----------------------------------------------------------------------
 
-    const categorizerPrompt = `Analyze the following GitHub profile and repositories, then categorize them into distinct career roles.
+    // Build Behance portfolio section if present
+    const hasBehance = Array.isArray(behanceProjects) && behanceProjects.length > 0;
+    const behanceSection = hasBehance
+      ? `\n\nBehance Portfolio Projects (${behanceProjects.length} total):
+${JSON.stringify(
+  behanceProjects.map((p: { name: string; description: string | null; fields: string[]; tools: string[]; tags: string[]; views: number; appreciations: number; url: string; publishedAt: string }) => ({
+    name: p.name,
+    description: p.description,
+    fields: p.fields,
+    tools: p.tools,
+    tags: p.tags,
+    views: p.views,
+    appreciations: p.appreciations,
+    url: p.url,
+    published: p.publishedAt,
+  })),
+  null,
+  2
+)}
+
+Note: Behance projects are creative/design work. Consider these alongside GitHub repos when identifying career roles. They may indicate skills in graphic design, UI/UX, illustration, branding, etc.`
+      : "";
+
+    const categorizerPrompt = `Analyze the following GitHub profile and repositories${hasBehance ? " and Behance portfolio" : ""}, then categorize them into distinct career roles.
 
 User: ${userName || "GitHub User"}
 Bio: ${userBio || "Not provided"}
 
 Repositories (${projectSummaries.length} total):
-${JSON.stringify(projectSummaries, null, 2)}
+${JSON.stringify(projectSummaries, null, 2)}${behanceSection}
 
 Respond with the following XML structure exactly:
 

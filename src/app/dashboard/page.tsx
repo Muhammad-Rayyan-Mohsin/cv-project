@@ -17,7 +17,11 @@ import {
   History,
   Sparkles,
   RefreshCw,
+  Palette,
+  Github,
 } from "lucide-react";
+import BehancePanel from "@/components/BehancePanel";
+import { BehanceProjectCard } from "@/lib/behance-types";
 import { toast } from "sonner";
 
 type Step = "loading" | "repos" | "analyzing" | "results";
@@ -55,6 +59,10 @@ export default function Dashboard() {
   const [showUsage, setShowUsage] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Data source tab: "github" | "behance"
+  const [dataSource, setDataSource] = useState<"github" | "behance">("github");
+  const [behanceProjects, setBehanceProjects] = useState<BehanceProjectCard[]>([]);
 
   const fetchRepos = useCallback(async (forceRefresh = false) => {
     setStep("loading");
@@ -154,6 +162,7 @@ export default function Dashboard() {
           repos: selected,
           userName: session?.user?.name,
           userBio: "",
+          behanceProjects: behanceProjects.length > 0 ? behanceProjects : undefined,
         }),
       });
 
@@ -579,6 +588,48 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
+          {/* Data source tabs */}
+          <div className="flex items-center gap-2 mb-6">
+            <button
+              onClick={() => setDataSource("github")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                dataSource === "github"
+                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+                  : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
+              }`}
+            >
+              <Github className="w-4 h-4" strokeWidth={1.5} />
+              GitHub
+            </button>
+            <button
+              onClick={() => setDataSource("behance")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                dataSource === "behance"
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                  : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
+              }`}
+            >
+              <Palette className="w-4 h-4" strokeWidth={1.5} />
+              Behance
+            </button>
+          </div>
+
+          {/* Behance tab */}
+          {dataSource === "behance" && (
+            <div className="mb-8">
+              <BehancePanel
+                onProjectsSelected={(selected) => {
+                  setBehanceProjects(selected);
+                  toast.success(`${selected.length} Behance project${selected.length !== 1 ? "s" : ""} ready`, {
+                    description: "Switch to GitHub tab and run analysis, or use these for your CV.",
+                  });
+                }}
+              />
+            </div>
+          )}
+
+          {/* GitHub tab */}
+          {dataSource === "github" && (<>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -587,6 +638,11 @@ export default function Dashboard() {
               <p className="text-zinc-500 mt-1 sm:mt-1.5 text-sm">
                 {repos.length} repos found — {selectedRepos.size} selected for
                 analysis
+                {behanceProjects.length > 0 && (
+                  <span className="ml-1 text-blue-400">
+                    + {behanceProjects.length} Behance project{behanceProjects.length !== 1 ? "s" : ""}
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -659,6 +715,7 @@ export default function Dashboard() {
               </p>
             </div>
           )}
+          </>)}
         </motion.div>
       )}
 
