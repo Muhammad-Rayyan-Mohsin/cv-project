@@ -1,23 +1,12 @@
 "use client";
 
 import { StructuredCV } from "@/lib/cv-types";
-
-function linkify(url: string, label?: string) {
-  const href = url.startsWith("http") ? url : `https://${url}`;
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-emerald-700 hover:underline"
-    >
-      {label || url}
-    </a>
-  );
-}
+import { linkify } from "@/lib/cv-utils";
 
 export default function CreativePreview({ cv }: { cv: StructuredCV }) {
   const pd = cv.personalDetails;
+
+  const makeHref = (url: string) => linkify(url).href;
 
   return (
     <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -55,7 +44,7 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
             )}
             {pd.phone && (
               <>
-                <span className="text-white/40">·</span>
+                <span className="text-white/40">&#183;</span>
                 <a href={`tel:${pd.phone}`} className="hover:text-white hover:underline">
                   {pd.phone}
                 </a>
@@ -63,15 +52,15 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
             )}
             {pd.location && (
               <>
-                <span className="text-white/40">·</span>
+                <span className="text-white/40">&#183;</span>
                 <span>{pd.location}</span>
               </>
             )}
             {pd.linkedIn && (
               <>
-                <span className="text-white/40">·</span>
+                <span className="text-white/40">&#183;</span>
                 <a
-                  href={pd.linkedIn.startsWith("http") ? pd.linkedIn : `https://${pd.linkedIn}`}
+                  href={makeHref(pd.linkedIn)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white hover:underline"
@@ -82,7 +71,7 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
             )}
             {pd.github && (
               <>
-                <span className="text-white/40">·</span>
+                <span className="text-white/40">&#183;</span>
                 <a
                   href={`https://github.com/${pd.github}`}
                   target="_blank"
@@ -95,9 +84,9 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
             )}
             {pd.website && (
               <>
-                <span className="text-white/40">·</span>
+                <span className="text-white/40">&#183;</span>
                 <a
-                  href={pd.website.startsWith("http") ? pd.website : `https://${pd.website}`}
+                  href={makeHref(pd.website)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white hover:underline"
@@ -152,7 +141,7 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
                       <span className="font-bold text-gray-800">
                         {exp.title}
                         {exp.organization && (
-                          <span className="font-normal text-gray-500"> — {exp.organization}</span>
+                          <span className="font-normal text-gray-500"> &mdash; {exp.organization}</span>
                         )}
                       </span>
                       {(exp.startDate || exp.endDate) && (
@@ -225,7 +214,7 @@ export default function CreativePreview({ cv }: { cv: StructuredCV }) {
                       key={i}
                       className="flex items-start gap-1.5 text-gray-700 text-[9pt]"
                     >
-                      <span className="text-emerald-500 mt-0.5">✓</span>
+                      <span className="text-emerald-500 mt-0.5">&#x2713;</span>
                       {cert}
                     </li>
                   ))}

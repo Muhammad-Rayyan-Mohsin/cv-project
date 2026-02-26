@@ -3,11 +3,20 @@ import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || !session.profileId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = rateLimit(`usage-get:${session.profileId}`, 30, 60000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later.", remaining: rl.remaining },
+      { status: 429 },
+    );
   }
 
   const cacheKey = CacheKeys.usage(session.profileId);
@@ -28,7 +37,7 @@ export async function GET() {
     // Fetch all token usage records for the user, most recent first
     const { data: records, error } = await supabase
       .from("token_usage")
-      .select("*")
+      .select("id, model, prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, created_at")
       .eq("user_id", session.profileId)
       .order("created_at", { ascending: false })
       .limit(100);

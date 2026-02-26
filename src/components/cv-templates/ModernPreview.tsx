@@ -1,17 +1,13 @@
 "use client";
 
 import { StructuredCV } from "@/lib/cv-types";
+import { linkify } from "@/lib/cv-utils";
 
-function linkify(url: string, label?: string) {
-  const href = url.startsWith("http") ? url : `https://${url}`;
+function LinkifyUrl({ url, label, className }: { url: string; label?: string; className?: string }) {
+  const { href, label: resolvedLabel } = linkify(url, label);
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="hover:underline"
-    >
-      {label || url}
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className || "hover:underline"}>
+      {resolvedLabel}
     </a>
   );
 }
@@ -73,7 +69,7 @@ export default function ModernPreview({ cv }: { cv: StructuredCV }) {
               <div className="flex items-start gap-2">
                 <span className="text-slate-400 shrink-0">in</span>
                 <span className="text-slate-200 break-all">
-                  {linkify(pd.linkedIn)}
+                  <LinkifyUrl url={pd.linkedIn} />
                 </span>
               </div>
             )}
@@ -81,7 +77,7 @@ export default function ModernPreview({ cv }: { cv: StructuredCV }) {
               <div className="flex items-start gap-2">
                 <span className="text-slate-400 shrink-0">&lt;/&gt;</span>
                 <span className="text-slate-200 break-all">
-                  {linkify(`https://github.com/${pd.github}`, pd.github)}
+                  <LinkifyUrl url={`https://github.com/${pd.github}`} label={pd.github} />
                 </span>
               </div>
             )}
@@ -89,7 +85,7 @@ export default function ModernPreview({ cv }: { cv: StructuredCV }) {
               <div className="flex items-start gap-2">
                 <span className="text-slate-400 shrink-0">www</span>
                 <span className="text-slate-200 break-all">
-                  {linkify(pd.website)}
+                  <LinkifyUrl url={pd.website} />
                 </span>
               </div>
             )}
@@ -178,7 +174,7 @@ export default function ModernPreview({ cv }: { cv: StructuredCV }) {
                         {exp.title}
                         {exp.organization && (
                           <span className="font-normal text-gray-500">
-                            {" "}— {exp.organization}
+                            {" "}&mdash; {exp.organization}
                           </span>
                         )}
                       </span>

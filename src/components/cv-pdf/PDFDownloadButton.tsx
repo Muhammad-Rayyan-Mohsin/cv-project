@@ -4,6 +4,7 @@ import { StructuredCV } from "@/lib/cv-types";
 import { useState, useCallback } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function PDFDownloadButton({
   cv,
@@ -29,7 +30,8 @@ export default function PDFDownloadButton({
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Failed to generate PDF:", err);
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setGenerating(false);
     }

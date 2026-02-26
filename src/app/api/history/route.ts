@@ -3,11 +3,21 @@ import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
+import { rateLimit } from "@/lib/rate-limit";
+import { trackEvent } from "@/lib/tracking";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || !session.profileId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rl = rateLimit(`history-get:${session.profileId}`, 30, 60000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later.", remaining: rl.remaining },
+      { status: 429 },
+    );
   }
 
   const cacheKey = CacheKeys.history(session.profileId);
@@ -87,6 +97,14 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const rl = rateLimit(`history-delete:${session.profileId}`, 10, 60000);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later.", remaining: rl.remaining },
+      { status: 429 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get("id");
 
@@ -116,6 +134,8 @@ export async function DELETE(request: Request) {
     // Invalidate history and usage caches for this user
     cache.delete(CacheKeys.history(session.profileId));
     cache.delete(CacheKeys.usage(session.profileId));
+
+    trackEvent(session.profileId, "session_deleted", { sessionId });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { StructuredCV, TemplateId } from "@/lib/cv-types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Check, Eye, Pencil, Camera } from "lucide-react";
 import SummaryEditor from "./SummaryEditor";
@@ -28,16 +28,34 @@ export default function CVEditor({
   const [saved, setSaved] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const isInitialMount = useRef(true);
 
+  // Track changes after initial mount
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setHasChanges(true);
     setSaved(false);
   }, [cvData]);
 
-  // Don't mark as changed on initial render
+  // Warn on unsaved changes when leaving page
   useEffect(() => {
-    setHasChanges(false);
-  }, []);
+    if (!hasChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasChanges]);
+
+  const handleBack = () => {
+    if (hasChanges && !window.confirm("You have unsaved changes. Are you sure you want to go back?")) {
+      return;
+    }
+    onBack();
+  };
 
   const handleSave = async () => {
     if (!cvId) return;
@@ -65,7 +83,7 @@ export default function CVEditor({
       {/* Toolbar */}
       <div className="flex items-center justify-between">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />

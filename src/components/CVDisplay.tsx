@@ -1,9 +1,9 @@
 "use client";
 
 import { CareerRole } from "@/lib/types";
-import { StructuredCV } from "@/lib/cv-types";
+import { StructuredCV, EducationEntry, ExperienceEntry } from "@/lib/cv-types";
 import { mergeProfileIntoCv, createEmptyPersonalDetails } from "@/lib/cv-utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -14,10 +14,14 @@ import {
   BookOpen,
   ExternalLink,
   Pencil,
+  Layout,
+  Eye,
+  FileText,
 } from "lucide-react";
 import CVEditor from "./cv-editor/CVEditor";
 import CVPreview from "./cv-editor/CVPreview";
 import PDFDownloadButton from "./cv-pdf/PDFDownloadButton";
+import { TemplateId } from "@/lib/cv-types";
 
 interface ProfileData {
   fullName: string;
@@ -27,8 +31,8 @@ interface ProfileData {
   linkedIn: string;
   github: string;
   website: string;
-  education: any[];
-  workExperience?: any[];
+  education: EducationEntry[];
+  workExperience?: ExperienceEntry[];
   avatarUrl?: string;
 }
 
@@ -43,6 +47,9 @@ export default function CVDisplay({
   const [copying, setCopying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [templateOverrides, setTemplateOverrides] = useState<Record<number, TemplateId>>({});
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -57,14 +64,20 @@ export default function CVDisplay({
       }
     } catch {
       // Profile not critical for display
+    } finally {
+      setProfileLoading(false);
     }
   };
 
   const handleCopy = async () => {
     const role = roles[activeRole];
-    await navigator.clipboard.writeText(role.cv);
-    setCopying(true);
-    setTimeout(() => setCopying(false), 2000);
+    try {
+      await navigator.clipboard.writeText(role.cv);
+      setCopying(true);
+      setTimeout(() => setCopying(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard:", err);
+    }
   };
 
   const handleDownloadMd = () => {
@@ -78,27 +91,52 @@ export default function CVDisplay({
     URL.revokeObjectURL(url);
   };
 
-  if (roles.length === 0) return null;
-
   const current = roles[activeRole];
-  const hasStructured = !!current.structuredCv;
 
-  // Merge profile data into structured CV for preview/PDF
-  const getMergedCv = (): StructuredCV | null => {
-    if (!current.structuredCv) return null;
+  const mergedCv = useMemo((): StructuredCV | null => {
+    if (!current?.structuredCv) return null;
+    const override = templateOverrides[activeRole];
+    let cv: StructuredCV;
     if (profile) {
-      return mergeProfileIntoCv(current.structuredCv, profile);
+      cv = mergeProfileIntoCv(current.structuredCv, profile);
+    } else {
+      cv = {
+        ...current.structuredCv,
+        personalDetails:
+          current.structuredCv.personalDetails?.fullName
+            ? current.structuredCv.personalDetails
+            : createEmptyPersonalDetails(),
+      };
     }
-    return {
-      ...current.structuredCv,
-      personalDetails:
-        current.structuredCv.personalDetails?.fullName
-          ? current.structuredCv.personalDetails
-          : createEmptyPersonalDetails(),
-    };
+    if (override) {
+      cv = { ...cv, templateId: override };
+    }
+    return cv;
+  }, [current, profile, activeRole, templateOverrides]);
+
+  const handleTemplateChange = async (templateId: TemplateId) => {
+    setTemplateOverrides((prev) => ({ ...prev, [activeRole]: templateId }));
+
+    const cvId = cvIds?.[activeRole];
+    if (cvId && mergedCv) {
+      try {
+        await fetch(`/api/cv/${cvId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            structuredCv: { ...mergedCv, templateId },
+          }),
+        });
+      } catch {
+        // Template change is still reflected in UI even if save fails
+      }
+    }
   };
 
-  const mergedCv = getMergedCv();
+  if (roles.length === 0) return null;
+
+  const hasStructured = !!current.structuredCv;
+  const templateIds: TemplateId[] = ["classic", "modern", "professional", "creative", "executive"];
 
   // Editing mode
   if (editing && mergedCv) {
@@ -107,22 +145,20 @@ export default function CVDisplay({
         {/* Role Tabs */}
         <div className="flex flex-wrap gap-2">
           {roles.map((role, i) => (
-            <motion.button
+            <button
               key={i}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               onClick={() => {
                 setActiveRole(i);
                 setEditing(!!roles[i].structuredCv);
               }}
-              className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
+              className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
                 i === activeRole
-                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
-                  : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
+                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                  : "bg-white/[0.03] text-zinc-500 border border-white/[0.06] hover:text-zinc-300 hover:border-white/[0.1]"
               }`}
             >
               {role.role}
-            </motion.button>
+            </button>
           ))}
         </div>
 
@@ -138,156 +174,249 @@ export default function CVDisplay({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Role Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {roles.map((role, i) => (
-          <motion.button
-            key={i}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setActiveRole(i)}
-            className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
-              i === activeRole
-                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)]"
-                : "bg-zinc-950 text-zinc-400 border border-white/5 hover:border-white/10 hover:text-white"
-            }`}
-          >
-            {role.role}
-          </motion.button>
-        ))}
+    <div className="space-y-5">
+      {/* ── Role Tabs ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 -mb-1 scrollbar-none">
+          {roles.map((role, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveRole(i)}
+              className={`relative px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap rounded-lg ${
+                i === activeRole
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              {role.role}
+              {/* Active underline */}
+              {i === activeRole && (
+                <motion.div
+                  layoutId="cv-role-indicator"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+                  transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setShowPreview(!showPreview)}
+          className="lg:hidden flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white px-3 py-2 rounded-xl border border-white/[0.06] hover:border-white/[0.1] bg-white/[0.02] transition-all shrink-0"
+        >
+          {showPreview ? (
+            <>
+              <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Details
+            </>
+          ) : (
+            <>
+              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Preview
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Role Info */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeRole}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-2xl bg-zinc-950 border border-white/5 overflow-hidden"
-        >
-          {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-white/5">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                  {current.role}
-                </h2>
-                <p className="text-zinc-400 text-sm mt-1 leading-relaxed">
-                  {current.description}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 shrink-0">
-                {hasStructured && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setEditing(true)}
-                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-300 px-3 py-2 rounded-full text-sm transition-colors border border-white/5"
-                  >
-                    <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
-                    Edit
-                  </motion.button>
-                )}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCopy}
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-zinc-300 px-3 py-2 rounded-full text-sm transition-colors border border-white/5"
-                >
-                  {copying ? (
-                    <>
-                      <Check
-                        className="w-3.5 h-3.5 text-emerald-400"
-                        strokeWidth={2}
-                      />
-                      <span className="text-emerald-400">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" strokeWidth={2} />
-                      Copy
-                    </>
+      {/* Divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+
+      {/* Profile loading indicator */}
+      {profileLoading && (
+        <div className="flex items-center gap-2 text-xs text-zinc-600">
+          <div className="w-3 h-3 border border-zinc-700 border-t-amber-500 rounded-full animate-spin" />
+          Loading profile data...
+        </div>
+      )}
+
+      {/* ── Two-column layout ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5 lg:gap-6">
+        {/* LEFT: Controls panel */}
+        <div className={`${showPreview ? "hidden lg:block" : ""}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeRole}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-4"
+            >
+              {/* Role info card */}
+              <div className="rounded-2xl border border-white/[0.06] bg-zinc-950/80 overflow-hidden">
+                {/* Header */}
+                <div className="p-5">
+                  <h2 className="text-lg font-bold text-white tracking-[-0.02em]">
+                    {current.role}
+                  </h2>
+                  <p className="text-zinc-500 text-[13px] mt-1.5 leading-relaxed line-clamp-3">
+                    {current.description}
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-white/[0.04] mx-5" />
+
+                {/* Action Buttons */}
+                <div className="px-5 py-4 flex flex-wrap gap-2">
+                  {hasStructured && (
+                    <button
+                      onClick={() => setEditing(true)}
+                      className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.07] text-zinc-400 hover:text-white px-3.5 py-2 rounded-xl text-xs font-medium transition-all border border-white/[0.06] hover:border-white/[0.1]"
+                    >
+                      <Pencil className="w-3 h-3" strokeWidth={1.5} />
+                      Edit CV
+                    </button>
                   )}
-                </motion.button>
-                {hasStructured && mergedCv ? (
-                  <PDFDownloadButton cv={mergedCv} roleName={current.role} />
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleDownloadMd}
-                    className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-3 py-2 rounded-full text-sm font-medium transition-colors"
+                  <button
+                    onClick={handleCopy}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium transition-all border ${
+                      copying
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : "bg-white/[0.04] hover:bg-white/[0.07] text-zinc-400 hover:text-white border-white/[0.06] hover:border-white/[0.1]"
+                    }`}
                   >
-                    <Download className="w-3.5 h-3.5" strokeWidth={2} />
-                    Download
-                  </motion.button>
-                )}
+                    {copying ? (
+                      <>
+                        <Check className="w-3 h-3" strokeWidth={2} />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" strokeWidth={1.5} />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                  {hasStructured && mergedCv ? (
+                    <PDFDownloadButton cv={mergedCv} roleName={current.role} />
+                  ) : (
+                    <button
+                      onClick={handleDownloadMd}
+                      className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-[0_0_16px_rgba(245,158,11,0.15)] hover:shadow-[0_0_24px_rgba(245,158,11,0.2)] transition-shadow"
+                    >
+                      <Download className="w-3 h-3" strokeWidth={2} />
+                      Download
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Skills */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-              Key Skills
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {current.skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="bg-orange-500/10 text-orange-300 px-3 py-1 rounded-full text-xs font-medium border border-orange-500/20"
-                >
-                  {skill}
+              {/* Template Selector */}
+              {hasStructured && mergedCv && (
+                <div className="rounded-2xl border border-white/[0.06] bg-zinc-950/80 p-5">
+                  <h3 className="text-[11px] font-medium text-zinc-600 uppercase tracking-[0.08em] mb-3 flex items-center gap-1.5">
+                    <Layout className="w-3 h-3" strokeWidth={1.5} />
+                    Template
+                  </h3>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {templateIds.map((tid) => {
+                      const isActive = (mergedCv.templateId || "classic") === tid;
+                      return (
+                        <button
+                          key={tid}
+                          onClick={() => handleTemplateChange(tid)}
+                          className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                            isActive
+                              ? "bg-amber-500/15 text-amber-400 border border-amber-500/25 shadow-[0_0_8px_rgba(245,158,11,0.08)]"
+                              : "text-zinc-600 hover:text-zinc-400 border border-white/[0.04] hover:border-white/[0.08] bg-white/[0.02]"
+                          }`}
+                        >
+                          {tid.charAt(0).toUpperCase() + tid.slice(1)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills */}
+              <div className="rounded-2xl border border-white/[0.06] bg-zinc-950/80 p-5">
+                <h3 className="text-[11px] font-medium text-zinc-600 uppercase tracking-[0.08em] mb-3">
+                  Key Skills
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {current.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="text-[11px] font-medium tracking-wide uppercase px-2.5 py-1 rounded-lg bg-amber-500/[0.06] text-amber-400/80 border border-amber-500/10"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Matching Repos */}
+              <div className="rounded-2xl border border-white/[0.06] bg-zinc-950/80 p-5">
+                <h3 className="text-[11px] font-medium text-zinc-600 uppercase tracking-[0.08em] mb-3">
+                  Repositories ({current.matchingRepos.length})
+                </h3>
+                <div className="space-y-1.5">
+                  {current.matchingRepos.map((repo) => (
+                    <a
+                      key={repo.id}
+                      href={repo.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-2 py-1.5 px-2.5 -mx-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
+                    >
+                      <BookOpen className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 shrink-0" strokeWidth={1.5} />
+                      <span className="text-[13px] text-zinc-400 group-hover:text-zinc-200 transition-colors truncate">
+                        {repo.name}
+                      </span>
+                      <ExternalLink className="w-2.5 h-2.5 text-zinc-700 group-hover:text-zinc-500 ml-auto shrink-0 transition-colors" strokeWidth={1.5} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* RIGHT: Sticky CV Preview */}
+        <div className={`${showPreview ? "" : "hidden lg:block"} lg:sticky lg:top-6 lg:self-start`}>
+          <div className="rounded-2xl border border-white/[0.06] bg-zinc-950/80 overflow-hidden">
+            {/* Preview header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.04]">
+              <h3 className="text-[11px] font-medium text-zinc-600 uppercase tracking-[0.08em] flex items-center gap-1.5">
+                <Eye className="w-3 h-3" strokeWidth={1.5} />
+                Preview
+              </h3>
+              {hasStructured && mergedCv && (
+                <span className="text-[10px] text-zinc-700 font-mono">
+                  {(mergedCv.templateId || "classic")}
                 </span>
-              ))}
+              )}
             </div>
-          </div>
 
-          {/* Matching Repos */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-              Matching Repositories ({current.matchingRepos.length})
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {current.matchingRepos.map((repo) => (
-                <a
-                  key={repo.id}
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white px-3 py-1.5 rounded-full text-xs transition-colors border border-white/5"
+            {/* Preview content */}
+            <div className="p-5 overflow-auto max-h-[calc(100vh-6rem)]" data-lenis-prevent>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`${activeRole}-${mergedCv?.templateId || "md"}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <BookOpen className="w-3 h-3" strokeWidth={1.5} />
-                  {repo.name}
-                  <ExternalLink
-                    className="w-2.5 h-2.5 opacity-50"
-                    strokeWidth={2}
-                  />
-                </a>
-              ))}
+                  {hasStructured && mergedCv ? (
+                    <CVPreview cv={mergedCv} />
+                  ) : (
+                    <div className="prose-premium prose prose-sm max-w-none leading-relaxed">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {current.cv}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
-
-          {/* CV Content */}
-          <div className="p-4 sm:p-6">
-            <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">
-              Generated CV
-            </h3>
-            {hasStructured && mergedCv ? (
-              <CVPreview cv={mergedCv} />
-            ) : (
-              <div className="prose-premium prose prose-sm max-w-none leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {current.cv}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }

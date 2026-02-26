@@ -2,85 +2,121 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LogOut, LayoutDashboard, Github, UserCircle } from "lucide-react";
+import { LogOut, Github, LayoutDashboard, User } from "lucide-react";
+
+const NAV_LINKS = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/profile", label: "Profile", icon: User },
+] as const;
 
 export default function Navbar() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 flex items-center justify-center shadow-[0_0_16px_rgba(249,115,22,0.25)] group-hover:shadow-[0_0_24px_rgba(249,115,22,0.35)] transition-shadow">
-              {/* Folded paper / origami abstract mark */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 4 L20 4 L20 20 L4 20 Z" fill="white" fillOpacity="0.25" />
-                <path d="M4 4 L14 4 L20 10 L20 20 L4 20 Z" fill="white" fillOpacity="0.9" />
-                <path d="M14 4 L14 10 L20 10 Z" fill="white" fillOpacity="0.5" />
-              </svg>
-            </div>
-            <span className="text-white font-extrabold text-lg tracking-tight">
-              CV Tailor
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            {status === "loading" ? (
-              <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" />
-            ) : session ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors p-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-white/5"
-                  title="Dashboard"
-                >
-                  <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </Link>
-                <Link
-                  href="/dashboard/profile"
-                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors p-2 sm:px-3 sm:py-1.5 rounded-full hover:bg-white/5"
-                  title="Profile"
-                >
-                  <UserCircle className="w-4 h-4" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">Profile</span>
-                </Link>
-                <div className="flex items-center gap-2 sm:gap-3 pl-2 border-l border-white/10">
-                  <img
-                    src={session.user?.image || ""}
-                    alt=""
-                    className="w-7 h-7 rounded-full ring-1 ring-white/10"
-                  />
-                  <span className="text-zinc-400 text-sm hidden md:block">
-                    {session.user?.name}
-                  </span>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="text-zinc-500 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-white/5"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                  </motion.button>
-                </div>
-              </>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => signIn("github")}
-                className="flex items-center gap-2 bg-white text-black px-5 py-2 rounded-full font-medium text-sm hover:bg-zinc-100 transition-colors"
-              >
-                <Github className="w-4 h-4" strokeWidth={2} />
-                Sign in
-              </motion.button>
-            )}
+    <header className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none">
+      <nav className="mt-4 mx-4 flex items-center gap-1 px-2 h-12 rounded-2xl border border-white/[0.06] bg-zinc-950/60 backdrop-blur-2xl shadow-[0_2px_24px_rgba(0,0,0,0.4)] pointer-events-auto">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 pl-2 pr-3 h-8 rounded-xl hover:bg-white/[0.04] transition-colors"
+        >
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M4 4 L14 4 L20 10 L20 20 L4 20 Z" fill="white" fillOpacity="0.9" />
+              <path d="M14 4 L14 10 L20 10 Z" fill="white" fillOpacity="0.45" />
+            </svg>
           </div>
-        </div>
-      </div>
-    </nav>
+          <span className="text-white font-semibold text-sm tracking-tight hidden sm:block">
+            CV Tailor
+          </span>
+        </Link>
+
+        {/* Separator */}
+        {status !== "loading" && session && (
+          <div className="w-px h-4 bg-white/[0.06] mx-1" />
+        )}
+
+        {/* Nav links — only when authenticated */}
+        {status !== "loading" && session && (
+          <div className="flex items-center gap-0.5">
+            {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+              const isActive =
+                href === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname.startsWith(href);
+
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className="relative flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-medium transition-colors"
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="absolute inset-0 rounded-xl bg-white/[0.08]"
+                      transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+                    />
+                  )}
+                  <Icon
+                    className={`relative w-3.5 h-3.5 ${isActive ? "text-orange-400" : "text-zinc-500"}`}
+                    strokeWidth={1.5}
+                  />
+                  <span
+                    className={`relative hidden sm:block ${isActive ? "text-zinc-200" : "text-zinc-500 hover:text-zinc-300"}`}
+                  >
+                    {label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Separator */}
+        {status !== "loading" && (
+          <div className="w-px h-4 bg-white/[0.06] mx-1" />
+        )}
+
+        {/* Right section */}
+        {status === "loading" ? (
+          <div className="w-7 h-7 rounded-full bg-zinc-800/60 animate-pulse mx-1" />
+        ) : session ? (
+          <div className="flex items-center gap-1">
+            {/* Avatar */}
+            {session.user?.image ? (
+              <img
+                src={session.user.image}
+                alt={session.user?.name || "Avatar"}
+                className="w-7 h-7 rounded-full ring-1 ring-white/[0.06]"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full ring-1 ring-white/[0.06] bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500">
+                {session.user?.name?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+            {/* Sign out */}
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-white/[0.04] transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => signIn("github")}
+            className="flex items-center gap-1.5 px-3.5 h-8 rounded-xl bg-white text-black text-xs font-medium hover:bg-zinc-200 transition-colors"
+          >
+            <Github className="w-3.5 h-3.5" strokeWidth={2} />
+            Sign in
+          </button>
+        )}
+      </nav>
+    </header>
   );
 }

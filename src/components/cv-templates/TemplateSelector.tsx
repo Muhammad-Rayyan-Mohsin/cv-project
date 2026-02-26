@@ -30,6 +30,11 @@ const templates: TemplateInfo[] = [
     name: "Creative",
     description: "Colorful banner with visual tags",
   },
+  {
+    id: "executive",
+    name: "Executive",
+    description: "Dense text-focused with bold rules",
+  },
 ];
 
 // Miniature layout wireframes
@@ -99,6 +104,26 @@ function LayoutThumbnail({ id, selected }: { id: TemplateId; selected: boolean }
     );
   }
 
+  if (id === "executive") {
+    return (
+      <div className="w-full aspect-[3/4] rounded bg-zinc-800 p-1.5 flex flex-col gap-0.5">
+        <div className={`h-1.5 w-2/3 rounded-sm ${accent} mx-auto`} />
+        <div className={`h-0.5 w-1/2 rounded-sm ${bar} mx-auto`} />
+        <div className={`h-0.5 w-3/4 rounded-sm ${selected ? "bg-orange-400/20" : "bg-zinc-700"} mx-auto mt-0.5`} />
+        <div className="flex-1 flex flex-col gap-0.5 mt-1">
+          <div className={`h-0.5 w-1/3 rounded-sm ${accent}`} />
+          <div className={`h-[1.5px] w-full ${selected ? "bg-orange-400/60" : "bg-zinc-600"}`} />
+          <div className={`h-0.5 w-full rounded-sm ${line}`} />
+          <div className={`h-0.5 w-full rounded-sm ${line}`} />
+          <div className={`h-0.5 w-1/3 rounded-sm ${accent} mt-0.5`} />
+          <div className={`h-[1.5px] w-full ${selected ? "bg-orange-400/60" : "bg-zinc-600"}`} />
+          <div className={`h-0.5 w-full rounded-sm ${line}`} />
+          <div className={`h-0.5 w-4/5 rounded-sm ${line}`} />
+        </div>
+      </div>
+    );
+  }
+
   // Creative
   return (
     <div className="w-full aspect-[3/4] rounded bg-zinc-800 overflow-hidden flex flex-col">
@@ -135,7 +160,7 @@ export default function TemplateSelector({
       <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 block">
         Template
       </label>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {templates.map((t) => (
           <motion.button
             key={t.id}

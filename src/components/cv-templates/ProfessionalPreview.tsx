@@ -1,17 +1,13 @@
 "use client";
 
 import { StructuredCV } from "@/lib/cv-types";
+import { linkify } from "@/lib/cv-utils";
 
-function linkify(url: string, label?: string) {
-  const href = url.startsWith("http") ? url : `https://${url}`;
+function LinkifyUrl({ url, label, className }: { url: string; label?: string; className?: string }) {
+  const { href, label: resolvedLabel } = linkify(url, label);
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-indigo-700 hover:underline"
-    >
-      {label || url}
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className || "text-indigo-700 hover:underline"}>
+      {resolvedLabel}
     </a>
   );
 }
@@ -60,19 +56,19 @@ export default function ProfessionalPreview({ cv }: { cv: StructuredCV }) {
                   {pd.linkedIn && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-indigo-500 font-bold text-[7pt]">LINKEDIN</span>
-                      {linkify(pd.linkedIn)}
+                      <LinkifyUrl url={pd.linkedIn} />
                     </div>
                   )}
                   {pd.github && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-indigo-500 font-bold text-[7pt]">GITHUB</span>
-                      {linkify(`https://github.com/${pd.github}`, pd.github)}
+                      <LinkifyUrl url={`https://github.com/${pd.github}`} label={pd.github} />
                     </div>
                   )}
                   {pd.website && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-indigo-500 font-bold text-[7pt]">WEBSITE</span>
-                      {linkify(pd.website)}
+                      <LinkifyUrl url={pd.website} />
                     </div>
                   )}
                 </div>
@@ -125,7 +121,7 @@ export default function ProfessionalPreview({ cv }: { cv: StructuredCV }) {
                     <span className="font-bold text-gray-800">
                       {exp.title}
                       {exp.organization && (
-                        <span className="font-normal text-gray-500"> — {exp.organization}</span>
+                        <span className="font-normal text-gray-500"> &mdash; {exp.organization}</span>
                       )}
                     </span>
                     {(exp.startDate || exp.endDate) && (
@@ -174,7 +170,7 @@ export default function ProfessionalPreview({ cv }: { cv: StructuredCV }) {
                     <span>
                       <span className="font-semibold text-gray-800">{edu.degree}</span>
                       {edu.institution && (
-                        <span className="text-gray-500"> — {edu.institution}</span>
+                        <span className="text-gray-500"> &mdash; {edu.institution}</span>
                       )}
                     </span>
                     {(edu.startDate || edu.endDate) && (

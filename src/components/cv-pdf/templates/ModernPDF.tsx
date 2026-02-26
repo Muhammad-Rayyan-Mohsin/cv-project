@@ -1,77 +1,85 @@
 import { Page, View, Text, Link, Image, StyleSheet } from "@react-pdf/renderer";
 import { StructuredCV } from "@/lib/cv-types";
-
-function cleanUrl(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
-}
+import { cleanUrl } from "@/lib/cv-utils";
 
 const s = StyleSheet.create({
   page: {
     flexDirection: "row",
     fontFamily: "Helvetica",
-    fontSize: 9,
-    lineHeight: 1.35,
+    fontSize: 10,
+    lineHeight: 1.4,
     color: "#1a1a1a",
   },
   sidebar: {
-    width: 180,
+    width: 200,
     backgroundColor: "#1e293b",
     color: "#e2e8f0",
     padding: 20,
-    paddingTop: 28,
   },
   main: {
     flex: 1,
-    padding: 28,
-    paddingLeft: 24,
+    padding: 24,
   },
   photo: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginBottom: 10,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    marginBottom: 16,
     alignSelf: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   name: {
     fontSize: 14,
     fontFamily: "Helvetica-Bold",
     color: "#ffffff",
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: "center",
   },
   sideLabel: {
-    fontSize: 7,
+    fontSize: 8,
     fontFamily: "Helvetica-Bold",
     color: "#94a3b8",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 4,
-    marginTop: 10,
+    marginTop: 20,
+  },
+  contactRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 4,
+    gap: 4,
+  },
+  contactIcon: {
+    fontSize: 7.5,
+    color: "#94a3b8",
+    width: 16,
   },
   contactItem: {
-    fontSize: 7.5,
-    color: "#cbd5e1",
-    marginBottom: 3,
+    fontSize: 8.5,
+    color: "#e2e8f0",
+    flex: 1,
   },
   contactLink: {
-    fontSize: 7.5,
-    color: "#93c5fd",
+    fontSize: 8.5,
+    color: "#e2e8f0",
   },
   skillCat: {
-    fontSize: 7.5,
+    fontSize: 8,
     fontFamily: "Helvetica-Bold",
-    color: "#e2e8f0",
-    marginBottom: 1,
-    marginTop: 4,
+    color: "#cbd5e1",
+    marginBottom: 2,
+    marginTop: 8,
   },
   skillTag: {
-    fontSize: 7,
-    color: "#cbd5e1",
+    fontSize: 7.5,
+    color: "#e2e8f0",
     backgroundColor: "#334155",
-    padding: "2 4",
-    borderRadius: 2,
-    marginRight: 2,
-    marginBottom: 2,
+    padding: "2 6",
+    borderRadius: 4,
+    marginRight: 4,
+    marginBottom: 4,
   },
   sectionHeader: {
     fontSize: 10,
@@ -79,27 +87,28 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.8,
     color: "#1e293b",
-    borderBottomWidth: 1.5,
+    borderBottomWidth: 2,
     borderBottomColor: "#e2e8f0",
-    paddingBottom: 2,
-    marginBottom: 5,
-    marginTop: 10,
+    paddingBottom: 4,
+    marginBottom: 8,
+    marginTop: 16,
   },
-  expEntry: { marginBottom: 6 },
+  expEntry: { marginBottom: 12 },
   expTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  expTitle: { fontFamily: "Helvetica-Bold", fontSize: 9 },
-  expOrg: { color: "#64748b", fontSize: 9 },
-  expDate: { fontSize: 7.5, color: "#94a3b8" },
-  bullet: { flexDirection: "row", marginLeft: 8, marginTop: 1.5 },
-  bulletDot: { width: 8, fontSize: 9, color: "#94a3b8" },
-  bulletText: { flex: 1, fontSize: 8.5, color: "#374151" },
-  techLine: { fontSize: 7, color: "#94a3b8", fontStyle: "italic", marginLeft: 8, marginTop: 1 },
-  bodyText: { fontSize: 9, color: "#475569", lineHeight: 1.4 },
-  eduDegree: { fontFamily: "Helvetica-Bold", fontSize: 9 },
-  eduInst: { color: "#64748b", fontSize: 9 },
-  eduDetails: { fontSize: 7.5, color: "#94a3b8", marginTop: 1 },
-  eduEntry: { marginBottom: 4 },
-  certItem: { flexDirection: "row", marginLeft: 8, marginTop: 1.5 },
+  expTitle: { fontFamily: "Helvetica-Bold", fontSize: 10, color: "#1e293b" },
+  expOrg: { color: "#6b7280", fontSize: 10 },
+  expDate: { fontSize: 8, color: "#6b7280" },
+  bullet: { flexDirection: "row", marginLeft: 8, marginTop: 2 },
+  bulletDot: { width: 8, fontSize: 10, color: "#374151" },
+  bulletText: { flex: 1, fontSize: 10, color: "#374151" },
+  techLine: { fontSize: 8, color: "#9ca3af", fontStyle: "italic", marginLeft: 8, marginTop: 2 },
+  bodyText: { fontSize: 10, color: "#374151", lineHeight: 1.4 },
+  eduDegree: { fontFamily: "Helvetica-Bold", fontSize: 8.5, color: "#ffffff" },
+  eduInst: { color: "#cbd5e1", fontSize: 8 },
+  eduDate: { fontSize: 7.5, color: "#94a3b8" },
+  eduDetails: { fontSize: 7.5, color: "#94a3b8", marginTop: 2 },
+  eduEntry: { marginBottom: 8 },
+  certItem: { flexDirection: "row", marginLeft: 8, marginTop: 2 },
 });
 
 export default function ModernPDF({ cv }: { cv: StructuredCV }) {
@@ -114,30 +123,50 @@ export default function ModernPDF({ cv }: { cv: StructuredCV }) {
 
         <Text style={s.sideLabel}>Contact</Text>
         {pd.email && (
-          <Link src={`mailto:${pd.email}`}>
-            <Text style={s.contactLink}>{pd.email}</Text>
-          </Link>
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>@</Text>
+            <Link src={`mailto:${pd.email}`}>
+              <Text style={s.contactLink}>{pd.email}</Text>
+            </Link>
+          </View>
         )}
         {pd.phone && (
-          <Link src={`tel:${pd.phone}`}>
-            <Text style={s.contactLink}>{pd.phone}</Text>
-          </Link>
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>#</Text>
+            <Link src={`tel:${pd.phone}`}>
+              <Text style={s.contactLink}>{pd.phone}</Text>
+            </Link>
+          </View>
         )}
-        {pd.location && <Text style={s.contactItem}>{pd.location}</Text>}
+        {pd.location && (
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>~</Text>
+            <Text style={s.contactItem}>{pd.location}</Text>
+          </View>
+        )}
         {pd.linkedIn && (
-          <Link src={pd.linkedIn.startsWith("http") ? pd.linkedIn : `https://${pd.linkedIn}`}>
-            <Text style={s.contactLink}>{cleanUrl(pd.linkedIn)}</Text>
-          </Link>
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>in</Text>
+            <Link src={pd.linkedIn.startsWith("http") ? pd.linkedIn : `https://${pd.linkedIn}`}>
+              <Text style={s.contactLink}>{cleanUrl(pd.linkedIn)}</Text>
+            </Link>
+          </View>
         )}
         {pd.github && (
-          <Link src={`https://github.com/${pd.github}`}>
-            <Text style={s.contactLink}>{pd.github}</Text>
-          </Link>
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>{"</>"}</Text>
+            <Link src={`https://github.com/${pd.github}`}>
+              <Text style={s.contactLink}>{pd.github}</Text>
+            </Link>
+          </View>
         )}
         {pd.website && (
-          <Link src={pd.website.startsWith("http") ? pd.website : `https://${pd.website}`}>
-            <Text style={s.contactLink}>{cleanUrl(pd.website)}</Text>
-          </Link>
+          <View style={s.contactRow}>
+            <Text style={s.contactIcon}>www</Text>
+            <Link src={pd.website.startsWith("http") ? pd.website : `https://${pd.website}`}>
+              <Text style={s.contactLink}>{cleanUrl(pd.website)}</Text>
+            </Link>
+          </View>
         )}
 
         {cv.skills.length > 0 && (
@@ -160,16 +189,15 @@ export default function ModernPDF({ cv }: { cv: StructuredCV }) {
           <>
             <Text style={s.sideLabel}>Education</Text>
             {cv.education.map((edu) => (
-              <View key={edu.id} style={{ marginBottom: 4 }}>
-                <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ffffff" }}>
-                  {edu.degree}
-                </Text>
-                <Text style={{ fontSize: 7.5, color: "#cbd5e1" }}>{edu.institution}</Text>
+              <View key={edu.id} style={s.eduEntry}>
+                <Text style={s.eduDegree}>{edu.degree}</Text>
+                <Text style={s.eduInst}>{edu.institution}</Text>
                 {(edu.startDate || edu.endDate) && (
-                  <Text style={{ fontSize: 7, color: "#94a3b8" }}>
+                  <Text style={s.eduDate}>
                     {edu.startDate}{edu.endDate && ` – ${edu.endDate}`}
                   </Text>
                 )}
+                {edu.details && <Text style={s.eduDetails}>{edu.details}</Text>}
               </View>
             ))}
           </>
@@ -180,7 +208,7 @@ export default function ModernPDF({ cv }: { cv: StructuredCV }) {
       <View style={s.main}>
         {cv.summary && (
           <View>
-            <Text style={s.sectionHeader}>Professional Summary</Text>
+            <Text style={{...s.sectionHeader, marginTop: 0}}>Professional Summary</Text>
             <Text style={s.bodyText}>{cv.summary}</Text>
           </View>
         )}

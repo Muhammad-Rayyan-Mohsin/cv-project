@@ -1,17 +1,14 @@
 import { Page, View, Text, Link, Image, StyleSheet } from "@react-pdf/renderer";
 import { StructuredCV } from "@/lib/cv-types";
-
-function cleanUrl(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
-}
+import { cleanUrl } from "@/lib/cv-utils";
 
 const s = StyleSheet.create({
   page: {
     paddingTop: 32,
     paddingBottom: 32,
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
     fontFamily: "Helvetica",
-    fontSize: 9,
+    fontSize: 10.5,
     lineHeight: 1.35,
     color: "#1a1a1a",
   },
@@ -19,21 +16,23 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 4,
+    gap: 16,
   },
   photo: {
-    width: 56,
-    height: 56,
-    borderRadius: 4,
-    marginRight: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   headerInfo: {
     flex: 1,
   },
   name: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#111827",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   contactGrid: {
     flexDirection: "row",
@@ -45,74 +44,87 @@ const s = StyleSheet.create({
     alignItems: "center",
     width: "48%",
     marginBottom: 2,
+    gap: 6,
   },
   contactLabel: {
-    fontSize: 6.5,
+    fontSize: 7,
     fontFamily: "Helvetica-Bold",
     color: "#6366f1",
-    marginRight: 4,
     width: 42,
   },
   contactValue: {
-    fontSize: 8,
+    fontSize: 8.5,
     color: "#374151",
   },
   contactLink: {
-    fontSize: 8,
+    fontSize: 8.5,
     color: "#4338ca",
   },
   accentLine: {
-    height: 2.5,
+    height: 3,
     backgroundColor: "#6366f1",
     borderRadius: 2,
-    marginTop: 6,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 16,
   },
   sectionHeader: {
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    color: "#312e81",
-    marginBottom: 4,
-    marginTop: 8,
+    color: "#3730a3",
+    marginBottom: 6,
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "center",
   },
   dot: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 3,
     backgroundColor: "#6366f1",
-    marginRight: 6,
+    marginRight: 8,
   },
   bodyText: {
-    fontSize: 9,
-    color: "#475569",
+    fontSize: 10.5,
+    color: "#374151",
     lineHeight: 1.4,
-    marginLeft: 11,
+    marginLeft: 14,
   },
   skillRow: {
     flexDirection: "row",
     marginBottom: 1.5,
-    marginLeft: 11,
+    marginLeft: 14,
   },
-  skillCat: { fontFamily: "Helvetica-Bold", fontSize: 9, color: "#374151" },
-  skillItems: { fontSize: 9, color: "#64748b" },
-  expEntry: { marginBottom: 6, marginLeft: 11 },
+  skillCat: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: "#1f2937" },
+  skillItems: { fontSize: 10.5, color: "#4b5563" },
+  expEntry: { marginBottom: 10, marginLeft: 14 },
   expTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  expTitle: { fontFamily: "Helvetica-Bold", fontSize: 9, color: "#374151" },
-  expOrg: { color: "#6b7280", fontSize: 9 },
-  expDate: { fontSize: 7.5, color: "#818cf8", fontFamily: "Helvetica-Bold" },
-  bullet: { flexDirection: "row", marginLeft: 6, marginTop: 1.5 },
-  bulletDot: { width: 8, fontSize: 9, color: "#94a3b8" },
-  bulletText: { flex: 1, fontSize: 8.5, color: "#4b5563" },
-  techTag: { fontSize: 7, color: "#6366f1", marginTop: 2 },
-  eduEntry: { marginBottom: 3, marginLeft: 11 },
+  expTitle: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: "#1f2937" },
+  expOrg: { color: "#6b7280", fontSize: 10.5 },
+  expDate: { fontSize: 8.5, color: "#818cf8", fontFamily: "Helvetica-Bold" },
+  bullet: { flexDirection: "row", marginLeft: 6, marginTop: 2 },
+  bulletDot: { width: 8, fontSize: 10.5, color: "#374151" },
+  bulletText: { flex: 1, fontSize: 10.5, color: "#374151" },
+  techRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 4,
+  },
+  techTag: {
+    fontSize: 7.5,
+    color: "#4f46e5",
+    backgroundColor: "#eef2ff",
+    padding: "2 6",
+    borderRadius: 2,
+    fontFamily: "Helvetica-Bold",
+  },
+  eduEntry: { marginBottom: 6, marginLeft: 14 },
   eduRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  eduDegree: { fontFamily: "Helvetica-Bold", fontSize: 9, color: "#374151" },
-  eduInst: { color: "#6b7280", fontSize: 9 },
-  eduDetails: { fontSize: 8, color: "#94a3b8", marginTop: 1 },
+  eduDegree: { fontFamily: "Helvetica-Bold", fontSize: 10.5, color: "#1f2937" },
+  eduInst: { color: "#6b7280", fontSize: 10.5 },
+  eduDetails: { fontSize: 9, color: "#6b7280", marginTop: 1 },
 });
 
 export default function ProfessionalPDF({ cv }: { cv: StructuredCV }) {
@@ -213,7 +225,11 @@ export default function ProfessionalPDF({ cv }: { cv: StructuredCV }) {
                 </View>
               ))}
               {exp.technologies.length > 0 && (
-                <Text style={s.techTag}>{exp.technologies.join(" · ")}</Text>
+                <View style={s.techRow}>
+                  {exp.technologies.map((t, ti) => (
+                    <Text key={ti} style={s.techTag}>{t}</Text>
+                  ))}
+                </View>
               )}
             </View>
           ))}
@@ -252,7 +268,7 @@ export default function ProfessionalPDF({ cv }: { cv: StructuredCV }) {
             <Text>Certifications</Text>
           </View>
           {cv.certifications.map((cert, i) => (
-            <View key={i} style={s.bullet}>
+            <View key={i} style={{...s.bullet, marginLeft: 14}}>
               <Text style={s.bulletDot}>•</Text>
               <Text style={s.bulletText}>{cert}</Text>
             </View>

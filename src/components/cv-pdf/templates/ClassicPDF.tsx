@@ -1,10 +1,7 @@
 import { Page, View, Text, Link } from "@react-pdf/renderer";
 import { StructuredCV } from "@/lib/cv-types";
+import { cleanUrl } from "@/lib/cv-utils";
 import styles from "../pdfStyles";
-
-function cleanUrl(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
-}
 
 export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
   const pd = cv.personalDetails;
@@ -38,7 +35,7 @@ export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
                 {i > 0 && <Text style={styles.contactSep}>|</Text>}
                 {item.href ? (
                   <Link src={item.href}>
-                    <Text style={{ color: "#2563eb", fontSize: 8 }}>{item.text}</Text>
+                    <Text style={{ color: "#1d4ed8", fontSize: 8 }}>{item.text}</Text>
                   </Link>
                 ) : (
                   <Text style={{ fontSize: 8 }}>{item.text}</Text>
@@ -53,7 +50,7 @@ export default function ClassicPDF({ cv }: { cv: StructuredCV }) {
                   {i > 0 && <Text style={styles.contactSep}>|</Text>}
                   {item.href ? (
                     <Link src={item.href}>
-                      <Text style={{ color: "#2563eb", fontSize: 8 }}>{item.text}</Text>
+                      <Text style={{ color: "#1d4ed8", fontSize: 8 }}>{item.text}</Text>
                     </Link>
                   ) : (
                     <Text style={{ fontSize: 8 }}>{item.text}</Text>

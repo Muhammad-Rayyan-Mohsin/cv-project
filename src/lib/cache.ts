@@ -1,5 +1,5 @@
 /**
- * Server-side in-memory cache with TTL and per-key invalidation.
+ * Server-side in-memory cache with TTL, per-key invalidation, and LRU eviction.
  *
  * Designed for caching per-user API responses (repos, history, usage)
  * across requests within the same server process. Data is automatically
@@ -14,6 +14,7 @@
 interface CacheEntry<T> {
   data: T;
   expiresAt: number;
+  lastAccessed: number;
 }
 
 export class MemoryCache {
@@ -26,6 +27,7 @@ export class MemoryCache {
 
   /**
    * Get a cached value. Returns undefined if expired or missing.
+   * Updates lastAccessed for LRU tracking.
    */
   get<T>(key: string): T | undefined {
     const entry = this.store.get(key);
@@ -36,24 +38,27 @@ export class MemoryCache {
       return undefined;
     }
 
+    // Update lastAccessed for LRU
+    entry.lastAccessed = Date.now();
+
     return entry.data as T;
   }
 
   /**
    * Set a value with a TTL in seconds.
+   * Evicts the least-recently-used entry if at capacity.
    */
   set<T>(key: string, data: T, ttlSeconds: number): void {
-    // Evict oldest entries if at capacity
-    if (this.store.size >= this.maxEntries) {
-      const firstKey = this.store.keys().next().value;
-      if (firstKey !== undefined) {
-        this.store.delete(firstKey);
-      }
+    // Evict LRU entry if at capacity (and we're not updating an existing key)
+    if (this.store.size >= this.maxEntries && !this.store.has(key)) {
+      this.evictLru();
     }
 
+    const now = Date.now();
     this.store.set(key, {
       data,
-      expiresAt: Date.now() + ttlSeconds * 1000,
+      expiresAt: now + ttlSeconds * 1000,
+      lastAccessed: now,
     });
   }
 
@@ -85,13 +90,62 @@ export class MemoryCache {
       }
     }
   }
+
+  /**
+   * Get cached data with staleness info for stale-while-revalidate patterns.
+   * Returns undefined if no entry exists or if past the grace period.
+   */
+  getWithStaleness<T>(
+    key: string,
+    graceSeconds: number,
+  ): { data: T; isStale: boolean } | undefined {
+    const entry = this.store.get(key);
+    if (!entry) return undefined;
+
+    const now = Date.now();
+    const graceExpiresAt = entry.expiresAt + graceSeconds * 1000;
+
+    if (now > graceExpiresAt) {
+      this.store.delete(key);
+      return undefined;
+    }
+
+    entry.lastAccessed = now;
+
+    return {
+      data: entry.data as T,
+      isStale: now > entry.expiresAt,
+    };
+  }
+
+  /** Returns cache statistics for monitoring. */
+  stats(): { size: number; maxEntries: number } {
+    return { size: this.store.size, maxEntries: this.maxEntries };
+  }
+
+  /** Remove the entry with the oldest lastAccessed timestamp. */
+  private evictLru(): void {
+    let oldestKey: string | undefined;
+    let oldestTime = Infinity;
+
+    for (const [key, entry] of this.store) {
+      if (entry.lastAccessed < oldestTime) {
+        oldestTime = entry.lastAccessed;
+        oldestKey = key;
+      }
+    }
+
+    if (oldestKey !== undefined) {
+      this.store.delete(oldestKey);
+    }
+  }
 }
 
 // Singleton cache instance shared across all API routes in the same process.
 // Using globalThis to survive HMR in development.
 const globalCache = globalThis as typeof globalThis & { __appCache?: MemoryCache };
 
-if (!globalCache.__appCache) {
+if (!globalCache.__appCache || !globalCache.__appCache.getWithStaleness) {
   globalCache.__appCache = new MemoryCache();
 }
 
@@ -102,14 +156,19 @@ export const CacheKeys = {
   repos: (userId: string) => `repos:${userId}`,
   history: (userId: string) => `history:${userId}`,
   usage: (userId: string) => `usage:${userId}`,
+  categorization: (userId: string) => `categorization:${userId}`,
 } as const;
 
 // TTLs in seconds
 export const CacheTTL = {
   /** GitHub repos: 5 minutes (repos rarely change within a session) */
   REPOS: 5 * 60,
+  /** Grace period for serving stale repo data while refreshing in background */
+  REPOS_STALE_GRACE: 10 * 60,
   /** History: 60 seconds (changes on new analysis or delete) */
   HISTORY: 60,
   /** Usage stats: 60 seconds (changes on new analysis) */
   USAGE: 60,
+  /** Categorization: 30 minutes */
+  CATEGORIZATION: 30 * 60,
 } as const;

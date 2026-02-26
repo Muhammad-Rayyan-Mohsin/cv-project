@@ -6,13 +6,13 @@ import { linkify } from "@/lib/cv-utils";
 function LinkifyUrl({ url, label, className }: { url: string; label?: string; className?: string }) {
   const { href, label: resolvedLabel } = linkify(url, label);
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={className || "text-blue-700 hover:underline"}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className || "text-gray-600 hover:underline"}>
       {resolvedLabel}
     </a>
   );
 }
 
-export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
+export default function ExecutivePreview({ cv }: { cv: StructuredCV }) {
   const pd = cv.personalDetails;
 
   return (
@@ -20,65 +20,61 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
       <div className="bg-white text-black rounded-lg p-4 sm:p-8 shadow-lg max-w-[210mm] mx-auto text-[9pt] sm:text-[10.5pt] leading-[1.35] font-sans min-w-[320px]">
         {/* Header */}
         {pd.fullName && (
-          <div className="mb-3 pb-2 border-b border-gray-300 text-center">
-            <h1 className="text-[16pt] sm:text-[20pt] font-bold text-black tracking-tight leading-tight">
+          <div className="mb-3 text-center">
+            <h1 className="text-[18pt] sm:text-[22pt] font-bold text-gray-900 tracking-tight leading-tight">
               {pd.fullName}
             </h1>
-            <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-1.5">
+            <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-500 mt-1.5">
               {pd.email && (
-                <a href={`mailto:${pd.email}`} className="text-blue-700 hover:underline">
+                <a href={`mailto:${pd.email}`} className="text-gray-600 hover:underline">
                   {pd.email}
                 </a>
               )}
               {pd.phone && (
                 <>
-                  <span className="text-gray-300">|</span>
-                  <a href={`tel:${pd.phone}`} className="text-blue-700 hover:underline">
+                  <span className="text-gray-400">|</span>
+                  <a href={`tel:${pd.phone}`} className="text-gray-600 hover:underline">
                     {pd.phone}
                   </a>
                 </>
               )}
               {pd.location && (
                 <>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-400">|</span>
                   <span>{pd.location}</span>
                 </>
               )}
             </div>
             {(pd.linkedIn || pd.github || pd.website) && (
-              <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-600 mt-0.5">
+              <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-0.5 text-[8.5pt] text-gray-500 mt-0.5">
                 {pd.linkedIn && <LinkifyUrl url={pd.linkedIn} />}
                 {pd.github && (
                   <>
-                    {pd.linkedIn && <span className="text-gray-300">|</span>}
-                    <LinkifyUrl url={`https://github.com/${pd.github}`} label={`github.com/${pd.github}`} />
+                    {pd.linkedIn && <span className="text-gray-400">|</span>}
+                    <LinkifyUrl url={`https://github.com/${pd.github}`} label="GitHub" />
                   </>
                 )}
                 {pd.website && (
                   <>
-                    {(pd.linkedIn || pd.github) && <span className="text-gray-300">|</span>}
+                    {(pd.linkedIn || pd.github) && <span className="text-gray-400">|</span>}
                     <LinkifyUrl url={pd.website} />
                   </>
                 )}
               </div>
             )}
-          </div>
-        )}
-
-        {/* Summary */}
-        {cv.summary && (
-          <div className="mb-3">
-            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-black border-b border-gray-200 pb-0.5 mb-1.5">
-              Summary
-            </h2>
-            <p className="text-gray-700">{cv.summary}</p>
+            {/* Tagline from summary */}
+            {cv.summary && (
+              <p className="text-[8pt] sm:text-[9pt] text-[#607d8b] uppercase tracking-[0.25em] mt-2 font-medium">
+                {cv.summary}
+              </p>
+            )}
           </div>
         )}
 
         {/* Skills */}
         {cv.skills.length > 0 && (
           <div className="mb-3">
-            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-black border-b border-gray-200 pb-0.5 mb-1.5">
+            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-gray-900 border-b-2 border-gray-700 pb-0.5 mb-2">
               Skills
             </h2>
             <div className="space-y-0.5">
@@ -95,30 +91,28 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
         {/* Experience */}
         {cv.experience.length > 0 && (
           <div className="mb-3">
-            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-black border-b border-gray-200 pb-0.5 mb-1.5">
-              Experience
+            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-gray-900 border-b-2 border-gray-700 pb-0.5 mb-2">
+              Work Experience
             </h2>
-            <div className="space-y-2.5">
-              {cv.experience.map((exp) => (
+            <div className="space-y-0">
+              {cv.experience.map((exp, idx) => (
                 <div key={exp.id}>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-semibold">
+                  <div className="flex items-baseline justify-between mt-2">
+                    <span className="font-bold text-gray-900">
                       {exp.title}
                       {exp.organization && (
-                        <span className="font-normal text-gray-500">
-                          {" "}&mdash; {exp.organization}
-                        </span>
+                        <span className="font-bold"> at {exp.organization}</span>
                       )}
                     </span>
-                    {(exp.startDate || exp.endDate) && (
-                      <span className="text-[8.5pt] text-gray-500 shrink-0 ml-2">
-                        {exp.startDate}
-                        {exp.endDate && ` – ${exp.endDate}`}
-                      </span>
-                    )}
+                    <span className="text-[8.5pt] text-gray-500 shrink-0 ml-2">
+                      {[
+                        [exp.startDate, exp.endDate].filter(Boolean).join(" - "),
+                      ].filter(Boolean).join("")}
+                    </span>
                   </div>
+                  <div className="border-b border-gray-300 mt-1 mb-1.5" />
                   {exp.bullets.length > 0 && (
-                    <ul className="list-disc list-outside ml-4 mt-0.5 space-y-0.5 text-gray-700">
+                    <ul className="list-disc list-outside ml-4 space-y-0.5 text-gray-700">
                       {exp.bullets.filter((b) => b.trim()).map((bullet, bi) => (
                         <li key={bi}>{bullet}</li>
                       ))}
@@ -138,29 +132,20 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
         {/* Education */}
         {cv.education.length > 0 && (
           <div className="mb-3">
-            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-black border-b border-gray-200 pb-0.5 mb-1.5">
+            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-gray-900 border-b-2 border-gray-700 pb-0.5 mb-2">
               Education
             </h2>
-            <div className="space-y-1.5">
+            <div className="space-y-0">
               {cv.education.map((edu) => (
-                <div key={edu.id}>
+                <div key={edu.id} className="py-1.5 border-b border-gray-200 last:border-b-0">
                   <div className="flex items-baseline justify-between">
-                    <span>
-                      <span className="font-semibold">{edu.degree}</span>
-                      {edu.institution && (
-                        <span className="text-gray-500"> &mdash; {edu.institution}</span>
-                      )}
+                    <span className="font-bold text-gray-900">{edu.institution}</span>
+                    <span className="text-[8.5pt] text-gray-500 shrink-0 ml-2">
+                      {[edu.startDate, edu.endDate].filter(Boolean).join(" - ")}
+                      {edu.details && ` | ${edu.details}`}
                     </span>
-                    {(edu.startDate || edu.endDate) && (
-                      <span className="text-[8.5pt] text-gray-500 shrink-0 ml-2">
-                        {edu.startDate}
-                        {edu.endDate && ` – ${edu.endDate}`}
-                      </span>
-                    )}
                   </div>
-                  {edu.details && (
-                    <p className="text-gray-500 text-[9pt]">{edu.details}</p>
-                  )}
+                  <p className="text-gray-600">{edu.degree}</p>
                 </div>
               ))}
             </div>
@@ -170,7 +155,7 @@ export default function ClassicPreview({ cv }: { cv: StructuredCV }) {
         {/* Certifications */}
         {cv.certifications.length > 0 && (
           <div>
-            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-black border-b border-gray-200 pb-0.5 mb-1.5">
+            <h2 className="text-[10pt] font-bold uppercase tracking-wider text-gray-900 border-b-2 border-gray-700 pb-0.5 mb-2">
               Certifications
             </h2>
             <ul className="list-disc list-outside ml-4 text-gray-700 space-y-0.5">

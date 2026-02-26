@@ -141,3 +141,12 @@ export function createEmptyPersonalDetails(): PersonalDetails {
     website: "",
   };
 }
+
+export function linkify(url: string, label?: string) {
+  const href = url.startsWith("http") ? url : `https://${url}`;
+  return { href, label: label || url };
+}
+
+export function cleanUrl(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}

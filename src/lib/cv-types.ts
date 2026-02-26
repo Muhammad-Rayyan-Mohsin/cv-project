@@ -34,7 +34,7 @@ export interface SkillCategory {
   items: string[];
 }
 
-export type TemplateId = "classic" | "modern" | "professional" | "creative";
+export type TemplateId = "classic" | "modern" | "professional" | "creative" | "executive";
 
 export interface StructuredCV {
   personalDetails: PersonalDetails;

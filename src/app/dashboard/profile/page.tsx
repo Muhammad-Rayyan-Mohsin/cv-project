@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { fadeUp } from "@/lib/animations";
 import { EducationEntry, ExperienceEntry } from "@/lib/cv-types";
 import {
   Save,
@@ -21,10 +22,38 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
+interface ProfileForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedIn: string;
+  website: string;
+}
+
+interface FormErrors {
+  email?: string;
+  phone?: string;
+  linkedIn?: string;
+  website?: string;
+}
+
+function validateForm(form: ProfileForm): FormErrors {
+  const errors: FormErrors = {};
+  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    errors.email = "Please enter a valid email address";
+  }
+  if (form.phone && !/^[+\d\s()-]{7,20}$/.test(form.phone)) {
+    errors.phone = "Please enter a valid phone number";
+  }
+  if (form.linkedIn && !/^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[\w-]+\/?$/.test(form.linkedIn) && form.linkedIn.length > 0) {
+    errors.linkedIn = "Expected format: linkedin.com/in/username";
+  }
+  if (form.website && !/^(https?:\/\/)?[\w.-]+\.\w{2,}(\/.*)?$/.test(form.website) && form.website.length > 0) {
+    errors.website = "Please enter a valid URL";
+  }
+  return errors;
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -32,14 +61,29 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
-  const [linkedIn, setLinkedIn] = useState("");
-  const [website, setWebsite] = useState("");
+  const [form, setForm] = useState<ProfileForm>({
+    fullName: "",
+    email: "",
+    phone: "",
+    location: "",
+    linkedIn: "",
+    website: "",
+  });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [workExperience, setWorkExperience] = useState<ExperienceEntry[]>([]);
+
+  const updateField = (field: keyof ProfileForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    // Clear error for field when user types
+    if (formErrors[field as keyof FormErrors]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field as keyof FormErrors];
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -53,12 +97,14 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         const p = data.profile;
-        setFullName(p.fullName || "");
-        setEmail(p.email || "");
-        setPhone(p.phone || "");
-        setLocation(p.location || "");
-        setLinkedIn(p.linkedIn || "");
-        setWebsite(p.website || "");
+        setForm({
+          fullName: p.fullName || "",
+          email: p.email || "",
+          phone: p.phone || "",
+          location: p.location || "",
+          linkedIn: p.linkedIn || "",
+          website: p.website || "",
+        });
         setEducation(
           (p.education || []).map((e: EducationEntry) => ({
             ...e,
@@ -82,6 +128,13 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    // Validate before saving
+    const errors = validateForm(form);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     setSaving(true);
 
     // Clean up work experience before save
@@ -104,12 +157,7 @@ export default function ProfilePage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName,
-          email,
-          phone,
-          location,
-          linkedIn,
-          website,
+          ...form,
           education,
           workExperience: cleanedWorkExperience,
         }),
@@ -216,7 +264,7 @@ export default function ProfilePage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
+      <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
       </div>
     );
@@ -224,14 +272,14 @@ export default function ProfilePage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
+      <div className="min-h-screen pt-20 flex items-center justify-center">
         <p className="text-zinc-400">Please sign in to access your profile.</p>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen pt-24 pb-16">
+    <main className="min-h-screen pt-20 pb-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
@@ -269,46 +317,50 @@ export default function ProfilePage() {
             <InputField
               icon={User}
               label="Full Name"
-              value={fullName}
-              onChange={setFullName}
+              value={form.fullName}
+              onChange={(v) => updateField("fullName", v)}
               placeholder="John Doe"
             />
             <InputField
               icon={Mail}
               label="Email"
-              value={email}
-              onChange={setEmail}
+              value={form.email}
+              onChange={(v) => updateField("email", v)}
               placeholder="john@example.com"
               type="email"
+              error={formErrors.email}
             />
             <InputField
               icon={Phone}
               label="Phone"
-              value={phone}
-              onChange={setPhone}
+              value={form.phone}
+              onChange={(v) => updateField("phone", v)}
               placeholder="+1 234 567 8900"
               type="tel"
+              error={formErrors.phone}
             />
             <InputField
               icon={MapPin}
               label="Location"
-              value={location}
-              onChange={setLocation}
+              value={form.location}
+              onChange={(v) => updateField("location", v)}
               placeholder="San Francisco, CA"
             />
             <InputField
               icon={Linkedin}
               label="LinkedIn URL"
-              value={linkedIn}
-              onChange={setLinkedIn}
+              value={form.linkedIn}
+              onChange={(v) => updateField("linkedIn", v)}
               placeholder="linkedin.com/in/johndoe"
+              error={formErrors.linkedIn}
             />
             <InputField
               icon={Globe}
               label="Portfolio Website"
-              value={website}
-              onChange={setWebsite}
+              value={form.website}
+              onChange={(v) => updateField("website", v)}
               placeholder="johndoe.dev"
+              error={formErrors.website}
             />
           </div>
         </motion.div>
@@ -397,6 +449,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => removeEducation(edu.id)}
                       className="ml-3 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                      aria-label="Remove education entry"
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                     </button>
@@ -500,6 +553,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => removeWorkExperience(exp.id)}
                       className="ml-3 p-1.5 text-zinc-600 hover:text-red-400 transition-colors"
+                      aria-label="Remove work experience entry"
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                     </button>
@@ -519,7 +573,7 @@ export default function ProfilePage() {
                     </div>
                     {exp.bullets.map((bullet, idx) => (
                       <div key={idx} className="flex items-center gap-2">
-                        <span className="text-zinc-600 text-xs">•</span>
+                        <span className="text-zinc-600 text-xs">&#8226;</span>
                         <input
                           type="text"
                           value={bullet}
@@ -530,6 +584,7 @@ export default function ProfilePage() {
                         <button
                           onClick={() => removeBullet(exp.id, idx)}
                           className="p-1 text-zinc-700 hover:text-red-400 transition-colors"
+                          aria-label="Remove bullet point"
                         >
                           <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
@@ -599,6 +654,7 @@ function InputField({
   onChange,
   placeholder,
   type = "text",
+  error,
 }: {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
@@ -606,6 +662,7 @@ function InputField({
   onChange: (v: string) => void;
   placeholder: string;
   type?: string;
+  error?: string;
 }) {
   return (
     <div>
@@ -618,8 +675,15 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/30 transition-colors"
+        className={`w-full bg-transparent border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none transition-colors ${
+          error
+            ? "border-red-500/40 focus:border-red-500/60"
+            : "border-white/[0.06] focus:border-orange-500/30"
+        }`}
       />
+      {error && (
+        <p className="text-red-400 text-xs mt-1">{error}</p>
+      )}
     </div>
   );
 }

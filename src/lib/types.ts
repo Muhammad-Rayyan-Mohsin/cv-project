@@ -20,7 +20,7 @@ export interface Repository {
 
 export interface RepoDetail extends Repository {
   languages: Record<string, number>;
-  readme: string | null;
+  readme?: string | null;
 }
 
 import { StructuredCV } from "./cv-types";
@@ -66,6 +66,23 @@ export interface UsageStats {
   totalCostUsd: number;
   totalRequests: number;
   records: UsageRecord[];
+}
+
+/** Result of pre-categorization step */
+export interface CategorizationResult {
+  summary: string;
+  roles: { title: string; description: string; repos: string[]; skills: string[] }[];
+  categorizationId?: string;
+  tokenUsage?: TokenUsage;
+}
+
+/** Request shape for CV generation with pre-categorized data */
+export interface GenerateCVsRequest {
+  categories: { title: string; description: string; repoNames: string[]; skills: string[] }[];
+  repos: RepoDetail[];
+  userName?: string;
+  userBio?: string;
+  categorizationId?: string;
 }
 
 export interface HistorySession {

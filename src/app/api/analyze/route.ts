@@ -7,142 +7,25 @@ import { structuredCvToMarkdown, createEmptyPersonalDetails } from "@/lib/cv-uti
 import { StructuredCV, ExperienceEntry } from "@/lib/cv-types";
 import { Json } from "@/lib/supabase-types";
 import { cache, CacheKeys } from "@/lib/cache";
+import { rateLimit } from "@/lib/rate-limit";
+import { AnalyzeRequestSchema, GenerateCVsRequestSchema } from "@/lib/validation";
+import { trackEvent } from "@/lib/tracking";
 import {
-  parseCategorizationXml,
-  parseCvXml,
+  parseCategorizationJson,
+  parseCvJson,
   ParsedCvResponse,
 } from "@/lib/xml-parser";
-
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_GENERATION_URL = "https://openrouter.ai/api/v1/generation";
-
-// ---------------------------------------------------------------------------
-// Reusable OpenRouter helper
-// ---------------------------------------------------------------------------
-
-interface OpenRouterResult {
-  content: string;
-  usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
-  generationId: string | null;
-  model: string;
-}
-
-async function callOpenRouter(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-  maxTokens: number,
-  temperature = 0.7,
-  agentName?: string,
-): Promise<OpenRouterResult> {
-  const model = process.env.OPENROUTER_MODEL || "google/gemini-3-flash-preview";
-  const requestBody = {
-    model,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    temperature,
-    max_tokens: maxTokens,
-  };
-
-  console.log(`[OpenRouter${agentName ? ` - ${agentName}` : ""}] Starting API call`);
-  console.log(`  Model: ${model}`);
-  console.log(`  Max tokens: ${maxTokens}, Temperature: ${temperature}`);
-  console.log(`  System prompt length: ${systemPrompt.length} chars`);
-  console.log(`  User prompt length: ${userPrompt.length} chars`);
-
-  const startTime = Date.now();
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-      "X-Title": "CV Tailor - GitHub Portfolio Analyzer",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  const elapsedMs = Date.now() - startTime;
-
-  if (!response.ok) {
-    const errorData = await response.text();
-    console.error(`[OpenRouter${agentName ? ` - ${agentName}` : ""}] ❌ API error (${elapsedMs}ms)`);
-    console.error(`  Status: ${response.status} ${response.statusText}`);
-    console.error(`  Response: ${errorData.slice(0, 500)}`);
-
-    // Parse error to extract more details
-    let errorCode = "UNKNOWN";
-    let errorMessage = "API request failed";
-    try {
-      const parsed = JSON.parse(errorData);
-      errorCode = parsed.error?.code || response.status;
-      errorMessage = parsed.error?.message || parsed.error?.metadata?.raw || errorMessage;
-    } catch {
-      // If not JSON, use raw error
-      errorMessage = errorData;
-    }
-
-    // Create a structured error
-    const err = new Error(errorMessage) as Error & { code?: number | string; statusCode?: number };
-    err.code = errorCode;
-    err.statusCode = response.status;
-    throw err;
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) {
-    console.error(`[OpenRouter${agentName ? ` - ${agentName}` : ""}] ❌ No content in response (${elapsedMs}ms)`);
-    throw new Error("No response content from AI");
-  }
-
-  const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-  const generationId = data.id || null;
-  const returnedModel = data.model || model;
-
-  console.log(`[OpenRouter${agentName ? ` - ${agentName}` : ""}] ✓ Success (${elapsedMs}ms)`);
-  console.log(`  Model used: ${returnedModel}`);
-  console.log(`  Generation ID: ${generationId}`);
-  console.log(`  Token usage: ${usage.prompt_tokens} prompt + ${usage.completion_tokens} completion = ${usage.total_tokens} total`);
-  console.log(`  Response length: ${content.length} chars`);
-
-  return {
-    content,
-    usage,
-    generationId,
-    model: returnedModel,
-  };
-}
-
-function cleanXml(raw: string): string {
-  return raw.replace(/```xml\n?/g, "").replace(/```\n?/g, "").trim();
-}
-
-// ---------------------------------------------------------------------------
-// Agent prompts
-// ---------------------------------------------------------------------------
-
-const CATEGORIZER_SYSTEM = `You are an expert career advisor. You analyze GitHub repositories to understand a developer's skills and experience, then categorize their projects into distinct career roles.
-
-Your analysis should be thorough and intelligent:
-- Look at the languages, frameworks, topics, README content, and project descriptions
-- Identify patterns that indicate expertise in specific career domains
-- Group related projects under the most fitting career role
-- A single project can appear under multiple roles if relevant
-
-You MUST respond with valid XML only. No markdown, no code fences, no prose outside the XML.`;
-
-const CV_WRITER_SYSTEM = `You are an expert CV writer. You generate professional, ATS-friendly structured CV content tailored to a specific career role based on a developer's GitHub projects.
-
-Your writing should:
-- Focus on achievements and impact, not just descriptions
-- Use strong action verbs and quantify where possible (users, performance, scale)
-- Be concise yet detailed — each bullet should demonstrate clear value
-- Tailor skill categories and language to the specific career role
-
-You MUST respond with valid XML only. No markdown, no code fences, no prose outside the XML.`;
+import {
+  callOpenRouter,
+  CV_WRITER_SYSTEM,
+  CATEGORIZER_SYSTEM,
+  sanitizeUserContent,
+  wrapUserData,
+  enrichReposWithReadmes,
+  fetchAndRecordCosts,
+  log,
+  OpenRouterResult,
+} from "@/lib/ai-helpers";
 
 // ---------------------------------------------------------------------------
 // Route handler
@@ -154,18 +37,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const MAX_REPOS = 50;
-  const { repos, userName, userBio } = await request.json();
-
-  if (!repos || !Array.isArray(repos) || repos.length === 0) {
-    return NextResponse.json({ error: "No repos provided" }, { status: 400 });
+  // Rate limiting: 5 analyses per hour
+  if (session.profileId) {
+    const { success, remaining } = rateLimit(session.profileId, 5, 60 * 60 * 1000);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Max 5 analyses per hour.", remaining },
+        { status: 429 },
+      );
+    }
   }
 
-  if (repos.length > MAX_REPOS) {
-    return NextResponse.json(
-      { error: `Too many repos. Maximum is ${MAX_REPOS}, got ${repos.length}.` },
-      { status: 400 },
-    );
+  // Parse and validate request body
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -176,105 +65,179 @@ export async function POST(request: Request) {
     );
   }
 
-  // Build repo summaries for Agent 1 (overview-level, 500 char READMEs)
-  const projectSummaries = repos.map((repo: RepoDetail) => ({
-    name: repo.name,
-    description: repo.description,
-    languages: repo.languages,
-    topics: repo.topics,
-    stars: repo.stargazers_count,
-    forks: repo.forks_count,
-    readme_excerpt: repo.readme?.slice(0, 500) || "No README",
-    url: repo.html_url,
-    last_updated: repo.pushed_at,
-  }));
+  // Fetch READMEs server-side for selected repos (lazy-loaded)
+  const accessToken = session.accessToken;
+  if (!accessToken) {
+    return NextResponse.json(
+      { error: "No GitHub access token" },
+      { status: 401 },
+    );
+  }
 
+  // ---------------------------------------------------------------------------
+  // Determine request format: new (pre-categorized) vs legacy
+  // ---------------------------------------------------------------------------
 
-  try {
-    // -----------------------------------------------------------------------
-    // AGENT 1 — Categorizer
-    // -----------------------------------------------------------------------
+  const bodyObj = body as Record<string, unknown>;
+  const hasCategories = Array.isArray(bodyObj?.categories);
+
+  let repos: RepoDetail[];
+  let userName: string | undefined;
+  let userBio: string | undefined;
+
+  interface CategorizedRole {
+    title: string;
+    description: string;
+    matchingRepoNames: string[];
+    skills: string[];
+  }
+
+  let categorizedRoles: CategorizedRole[];
+  let categorizationSummary: string;
+  let agent1Result: OpenRouterResult | null = null;
+
+  if (hasCategories) {
+    // -----------------------------------------------------------------
+    // NEW FLOW: categories already provided (pre-categorized)
+    // -----------------------------------------------------------------
+
+    const parsed = GenerateCVsRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+
+    repos = parsed.data.repos as RepoDetail[];
+    userName = parsed.data.userName;
+    userBio = parsed.data.userBio;
+
+    log.info(`[Analyze] Pre-categorized flow: ${parsed.data.categories.length} categories, ${repos.length} repos`);
+
+    // Enrich repos with READMEs
+    log.info(`Fetching READMEs for ${repos.length} selected repos...`);
+    repos = await enrichReposWithReadmes(accessToken, repos);
+    log.info("README enrichment complete");
+
+    categorizedRoles = parsed.data.categories.map((cat) => ({
+      title: cat.title,
+      description: cat.description,
+      matchingRepoNames: cat.repoNames,
+      skills: cat.skills,
+    }));
+
+    // Use a summary from the categories or a generic one
+    categorizationSummary = `Pre-categorized analysis with ${categorizedRoles.length} roles`;
+  } else {
+    // -----------------------------------------------------------------
+    // LEGACY FLOW: run categorization inline (backwards compat)
+    // -----------------------------------------------------------------
+
+    const parseResult = AnalyzeRequestSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parseResult.error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+
+    const { repos: rawRepos, userName: uName, userBio: uBio } = parseResult.data;
+    userName = uName;
+    userBio = uBio;
+
+    log.info(`Fetching READMEs for ${(rawRepos as RepoDetail[]).length} selected repos...`);
+    repos = await enrichReposWithReadmes(accessToken, rawRepos as RepoDetail[]);
+    log.info("README enrichment complete");
+
+    // Build repo summaries for Agent 1 (overview-level, 500 char READMEs)
+    const projectSummaries = repos.map((repo: RepoDetail) => ({
+      name: repo.name,
+      description: repo.description,
+      languages: repo.languages,
+      topics: repo.topics,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      readme_excerpt: wrapUserData(repo.readme?.slice(0, 500) || "No README", 500),
+      url: repo.html_url,
+      last_updated: repo.pushed_at,
+    }));
+
+    // Collect repo names for validation against AI output
+    const validRepoNames = new Set(repos.map((r: RepoDetail) => r.name));
+    const validFullNames = new Set(repos.map((r: RepoDetail) => r.full_name));
+
+    const sanitizedUserName = wrapUserData(userName || "GitHub User", 100);
+    const sanitizedUserBio = wrapUserData(userBio || "Not provided", 500);
 
     const categorizerPrompt = `Analyze the following GitHub profile and repositories, then categorize them into distinct career roles.
 
-User: ${userName || "GitHub User"}
-Bio: ${userBio || "Not provided"}
+User: ${sanitizedUserName}
+Bio: ${sanitizedUserBio}
 
 Repositories (${projectSummaries.length} total):
 ${JSON.stringify(projectSummaries, null, 2)}
 
-Respond with the following XML structure exactly:
+Respond with the following JSON structure exactly:
 
-<categorization>
-  <summary>A brief overview of the developer's overall profile and strengths</summary>
-  <roles>
-    <role>
-      <title>Role Title (e.g., Machine Learning Engineer)</title>
-      <description>Why this role fits based on the projects</description>
-      <matchingRepoNames>
-        <repo>repo1</repo>
-        <repo>repo2</repo>
-      </matchingRepoNames>
-      <skills>
-        <skill>skill1</skill>
-        <skill>skill2</skill>
-        <skill>skill3</skill>
-      </skills>
-    </role>
-  </roles>
-</categorization>
+{
+  "summary": "A brief overview of the developer's overall profile and strengths",
+  "roles": [
+    {
+      "title": "Role Title (e.g., Machine Learning Engineer)",
+      "description": "Why this role fits based on the projects",
+      "repos": ["repo1", "repo2"],
+      "skills": ["skill1", "skill2", "skill3"]
+    }
+  ]
+}
 
 Rules:
 - Create between 2-6 roles depending on the diversity of projects
 - **CRITICAL**: Each repository must be assigned to ONLY ONE role based on its primary category/domain
-- A repository cannot appear in multiple roles' matchingRepoNames
+- A repository cannot appear in multiple roles' repos array
 - Match repositories to roles by their primary technology stack and purpose
 - A role CAN have multiple repositories if they all fit that category
 - Each role should have at least 1 matching repo
 - List 3-8 top skills per role (technologies, frameworks, concepts)
-- Do NOT generate CVs — only categorize projects into roles
-- Escape special XML characters: & as &amp; < as &lt; > as &gt;
+- Do NOT generate CVs -- only categorize projects into roles
+- Use exact repository names from the input data
 
 Example: If there are 5 repos (ai-model, ml-pipeline, react-app, vue-dashboard, mobile-app):
-✓ CORRECT categorization:
-- AI/ML Engineer: ["ai-model", "ml-pipeline"] ← Multiple AI projects in AI role
-- Frontend Developer: ["react-app", "vue-dashboard"] ← Multiple web projects in web role
-- Mobile Developer: ["mobile-app"] ← One mobile project
-✗ WRONG: DO NOT assign "react-app" to AI/ML Engineer role
-✗ WRONG: DO NOT assign "ai-model" to Frontend Developer role`;
+CORRECT:
+- AI/ML Engineer: ["ai-model", "ml-pipeline"]
+- Frontend Developer: ["react-app", "vue-dashboard"]
+- Mobile Developer: ["mobile-app"]
+WRONG: DO NOT assign "react-app" to AI/ML Engineer role`;
 
-    console.log("\n========================================");
-    console.log("ANALYSIS PIPELINE START");
-    console.log("========================================");
-    console.log(`User: ${userName || "GitHub User"}`);
-    console.log(`Repositories: ${repos.length}`);
-    console.log(`Selected model: ${process.env.OPENROUTER_MODEL || "google/gemini-3-flash-preview"}`);
+    log.info("========================================");
+    log.info("ANALYSIS PIPELINE START (legacy flow)");
+    log.info(`User: ${userName || "GitHub User"}, Repositories: ${repos.length}`);
 
-    let agent1Result: OpenRouterResult;
     try {
-      console.log("\n--- AGENT 1: CATEGORIZER ---");
+      log.info("--- AGENT 1: CATEGORIZER ---");
       agent1Result = await callOpenRouter(apiKey, CATEGORIZER_SYSTEM, categorizerPrompt, 4000, 0.5, "Categorizer");
-    } catch (err: any) {
-      console.error("\n❌ Agent 1 (Categorizer) failed:", err);
+    } catch (err: unknown) {
+      const apiErr = err as Error & { statusCode?: number; code?: number | string };
+      log.error("Agent 1 (Categorizer) failed:", apiErr);
 
-      // Check for rate limit or insufficient credits
-      if (err.statusCode === 429) {
+      if (apiErr.statusCode === 429) {
         return NextResponse.json(
           {
             error: "Rate limited",
             errorType: "RATE_LIMIT",
-            message: err.message || "The AI service is temporarily rate-limited. Please try again in a few moments."
+            message: apiErr.message || "The AI service is temporarily rate-limited. Please try again in a few moments.",
           },
           { status: 429 },
         );
       }
 
-      if (err.statusCode === 402 || err.code === 402) {
+      if (apiErr.statusCode === 402 || apiErr.code === 402) {
         return NextResponse.json(
           {
             error: "Insufficient credits",
             errorType: "NO_CREDITS",
-            message: "Sorry, we're out of credits :("
+            message: "Sorry, we're out of credits :(",
           },
           { status: 402 },
         );
@@ -284,24 +247,55 @@ Example: If there are 5 repos (ai-model, ml-pipeline, react-app, vue-dashboard, 
         {
           error: "AI analysis failed during categorization",
           errorType: "ANALYSIS_FAILED",
-          message: err.message || "AI analysis failed during categorization"
+          message: apiErr.message || "AI analysis failed during categorization",
         },
         { status: 500 },
       );
     }
 
-    const categorization = parseCategorizationXml(cleanXml(agent1Result.content));
+    const categorization = parseCategorizationJson(agent1Result.content);
 
-    console.log(`\n✓ Categorization complete: ${categorization.roles.length} roles identified`);
+    // Validate that AI-returned repo names match actual input repos
+    for (const role of categorization.roles) {
+      const originalNames = [...role.matchingRepoNames];
+      role.matchingRepoNames = role.matchingRepoNames.filter((name) => {
+        if (validRepoNames.has(name) || validFullNames.has(name)) return true;
+        log.warn(`Hallucinated repo name "${name}" in role "${role.title}" -- removing`);
+        return false;
+      });
+      if (role.matchingRepoNames.length < originalNames.length) {
+        log.warn(
+          `Role "${role.title}": ${originalNames.length - role.matchingRepoNames.length} hallucinated repo(s) removed`,
+        );
+      }
+    }
+
+    log.info(`Categorization complete: ${categorization.roles.length} roles identified`);
     categorization.roles.forEach((role, i) => {
-      console.log(`  ${i + 1}. ${role.title} (${role.matchingRepoNames.length} repos)`);
+      log.info(`  ${i + 1}. ${role.title} (${role.matchingRepoNames.length} repos)`);
     });
 
+    categorizedRoles = categorization.roles;
+    categorizationSummary = categorization.summary;
+  }
+
+  // -----------------------------------------------------------------------
+  // Track analysis start
+  // -----------------------------------------------------------------------
+
+  trackEvent(session.profileId ?? null, "analysis_started", { repoCount: repos.length });
+
+  try {
     // -----------------------------------------------------------------------
-    // AGENT 2 — CV Writer (parallel, one per role)
+    // AGENT 2 -- CV Writer (parallel, one per role)
     // -----------------------------------------------------------------------
 
-    console.log("\n--- AGENT 2: CV WRITERS (parallel) ---");
+    log.info("--- AGENT 2: CV WRITERS (parallel) ---");
+
+    const sanitizedUserName = wrapUserData(
+      sanitizeUserContent(userName || "GitHub User"),
+      100,
+    );
 
     type CvSuccess = {
       success: true;
@@ -312,7 +306,7 @@ Example: If there are 5 repos (ai-model, ml-pipeline, react-app, vue-dashboard, 
     type CvFailure = { success: false; error: unknown };
     type CvResult = CvSuccess | CvFailure;
 
-    const cvPromises: Promise<CvResult>[] = categorization.roles.map(async (catRole) => {
+    const cvPromises: Promise<CvResult>[] = categorizedRoles.map(async (catRole) => {
       // Resolve full repo objects for this role (expanded READMEs for deeper context)
       const roleRepos = catRole.matchingRepoNames
         .map((name) =>
@@ -327,59 +321,51 @@ Example: If there are 5 repos (ai-model, ml-pipeline, react-app, vue-dashboard, 
         topics: repo.topics,
         stars: repo.stargazers_count,
         forks: repo.forks_count,
-        readme_excerpt: repo.readme?.slice(0, 2000) || "No README",
+        readme_excerpt: wrapUserData(repo.readme?.slice(0, 2000) || "No README", 2000),
         url: repo.html_url,
         last_updated: repo.pushed_at,
       }));
 
       const cvPrompt = `Generate a structured CV for the following career role based on these GitHub repositories.
 
-Role: ${catRole.title}
-Role Description: ${catRole.description}
+Role: ${wrapUserData(catRole.title, 200)}
+Role Description: ${wrapUserData(catRole.description, 500)}
 Top Skills: ${catRole.skills.join(", ")}
-User: ${userName || "GitHub User"}
+User: ${sanitizedUserName}
 
 Repositories (${focusedSummaries.length} total):
 ${JSON.stringify(focusedSummaries, null, 2)}
 
-Respond with the following XML structure exactly:
+Respond with the following JSON structure exactly:
 
-<cv>
-  <summary>A 2-3 sentence professional summary tailored for ${catRole.title}</summary>
-  <skillCategories>
-    <category>
-      <name>Languages</name>
-      <items>
-        <item>Python</item>
-        <item>TypeScript</item>
-      </items>
-    </category>
-    <category>
-      <name>Frameworks &amp; Libraries</name>
-      <items>
-        <item>React</item>
-        <item>TensorFlow</item>
-      </items>
-    </category>
-  </skillCategories>
-  <experience>
-    <entry>
-      <title>Project Name</title>
-      <organization>Personal Project</organization>
-      <startDate>2023</startDate>
-      <endDate>Present</endDate>
-      <bullets>
-        <bullet>Built X using Y, resulting in Z improvement</bullet>
-        <bullet>Implemented A that handled B concurrent users</bullet>
-      </bullets>
-      <technologies>
-        <tech>React</tech>
-        <tech>Node.js</tech>
-      </technologies>
-      <repoUrl>https://github.com/user/repo</repoUrl>
-    </entry>
-  </experience>
-</cv>
+{
+  "summary": "A 2-3 sentence professional summary tailored for ${catRole.title}",
+  "skills": [
+    {
+      "category": "Languages",
+      "items": ["Python", "TypeScript"]
+    },
+    {
+      "category": "Frameworks & Libraries",
+      "items": ["React", "TensorFlow"]
+    }
+  ],
+  "experience": [
+    {
+      "title": "Project Name",
+      "organization": "Personal Project",
+      "startDate": "2023",
+      "endDate": "Present",
+      "bullets": [
+        "Built X using Y, resulting in Z improvement",
+        "Implemented A that handled B concurrent users"
+      ],
+      "technologies": ["React", "Node.js"],
+      "repoUrl": "https://github.com/user/repo"
+    }
+  ],
+  "certifications": []
+}
 
 Rules:
 - Each experience entry should have 2-4 achievement-focused bullet points
@@ -387,16 +373,15 @@ Rules:
 - Use strong action verbs and quantify where possible (users, performance, scale)
 - Create 2-4 skill categories with relevant items for this role
 - The experience entries should map to the repositories provided
-- Include the repo URL in each experience entry's repoUrl element
-- Do NOT include education, certifications, or work experience (user fills these from their profile)
-- Escape special XML characters: & as &amp; < as &lt; > as &gt;`;
+- Include the repo URL in each experience entry's repoUrl field
+- Do NOT include education, certifications, or work experience (user fills these from their profile)`;
 
       try {
         const result = await callOpenRouter(apiKey, CV_WRITER_SYSTEM, cvPrompt, 8000, 0.7, `CV Writer - ${catRole.title}`);
-        const parsedCv = parseCvXml(cleanXml(result.content));
+        const parsedCv = parseCvJson(result.content);
         return { success: true as const, parsedCv, usage: result.usage, generationId: result.generationId };
       } catch (err) {
-        console.error(`\n❌ Agent 2 (CV Writer) failed for role "${catRole.title}":`, err);
+        log.error(`Agent 2 (CV Writer) failed for role "${catRole.title}":`, err);
         return { success: false as const, error: err };
       }
     });
@@ -405,11 +390,11 @@ Rules:
 
     const successCount = cvResults.filter((r) => r.success).length;
     const failCount = cvResults.filter((r) => !r.success).length;
-    console.log(`\n✓ CV generation complete: ${successCount} succeeded, ${failCount} failed`);
+    log.info(`CV generation complete: ${successCount} succeeded, ${failCount} failed`);
 
     // If every CV generation failed, bail out
     if (cvResults.every((r) => !r.success)) {
-      console.error("\n❌ All CV generations failed");
+      log.error("All CV generations failed");
       return NextResponse.json(
         { error: "AI failed to generate any CVs. Please try again." },
         { status: 500 },
@@ -420,11 +405,11 @@ Rules:
     // Assemble final result (same shape as before)
     // -----------------------------------------------------------------------
 
-    const modelUsed = agent1Result.model;
+    const modelUsed = agent1Result?.model || process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001";
 
     const result = {
-      summary: categorization.summary,
-      roles: categorization.roles.map((catRole, index) => {
+      summary: categorizationSummary,
+      roles: categorizedRoles.map((catRole, index) => {
         const cvResult = cvResults[index];
 
         // Full repo objects for this role
@@ -479,7 +464,7 @@ Rules:
     // -----------------------------------------------------------------------
 
     const allUsages = [
-      agent1Result.usage,
+      ...(agent1Result ? [agent1Result.usage] : []),
       ...cvResults.filter((r): r is CvSuccess => r.success).map((r) => r.usage),
     ];
 
@@ -492,9 +477,9 @@ Rules:
       { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
     );
 
-    console.log("\n--- TOKEN USAGE SUMMARY ---");
-    console.log(`Total API calls: ${allUsages.length} (1 categorizer + ${allUsages.length - 1} CV writers)`);
-    console.log(`Aggregated tokens: ${aggregatedUsage.prompt_tokens} prompt + ${aggregatedUsage.completion_tokens} completion = ${aggregatedUsage.total_tokens} total`);
+    log.info("--- TOKEN USAGE SUMMARY ---");
+    log.info(`Total API calls: ${allUsages.length} (${agent1Result ? "1 categorizer + " : ""}${allUsages.length - (agent1Result ? 1 : 0)} CV writers)`);
+    log.info(`Aggregated tokens: ${aggregatedUsage.prompt_tokens} prompt + ${aggregatedUsage.completion_tokens} completion = ${aggregatedUsage.total_tokens} total`);
 
     // -----------------------------------------------------------------------
     // Save to Supabase
@@ -538,65 +523,31 @@ Rules:
           await supabase.from("generated_cvs").insert(cvInserts);
         }
 
-        // Fetch cost from all generation IDs.
-        // OpenRouter populates cost data asynchronously — wait briefly
-        // then retry once if the first attempt returns 0.
+        // Fire and forget cost tracking -- don't block the response
         const allGenerationIds = [
-          agent1Result.generationId,
+          ...(agent1Result ? [agent1Result.generationId] : []),
           ...cvResults.filter((r): r is CvSuccess => r.success).map((r) => r.generationId),
         ].filter(Boolean) as string[];
 
-        const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-        await delay(3000);
-
-        async function fetchCost(genId: string): Promise<number> {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              const genRes = await fetch(
-                `${OPENROUTER_GENERATION_URL}?id=${genId}`,
-                { headers: { Authorization: `Bearer ${apiKey}` } },
-              );
-              if (genRes.ok) {
-                const genData = await genRes.json();
-                const cost = genData.data?.total_cost ?? 0;
-                if (cost > 0) return cost;
-              }
-            } catch {
-              // Silently skip
-            }
-            if (attempt === 0) await delay(2000);
-          }
-          return 0;
-        }
-
-        console.log(`\n--- COST TRACKING ---`);
-        console.log(`Generation IDs to query: ${allGenerationIds.length}`);
-
-        let totalCost = 0;
-        const costs = await Promise.all(allGenerationIds.map(fetchCost));
-        totalCost = costs.reduce((sum, c) => sum + c, 0);
-
-        console.log(`Total cost: $${totalCost.toFixed(6)}`);
-        if (totalCost === 0) {
-          console.warn("⚠️  Cost is $0 — OpenRouter may not have populated cost data yet");
-        }
-
-        await supabase.from("token_usage").insert({
-          user_id: session.profileId,
-          session_id: sessionId,
-          model: modelUsed,
-          prompt_tokens: aggregatedUsage.prompt_tokens,
-          completion_tokens: aggregatedUsage.completion_tokens,
-          total_tokens: aggregatedUsage.total_tokens,
-          estimated_cost_usd: totalCost,
-        });
+        fetchAndRecordCosts(
+          allGenerationIds,
+          sessionId,
+          session.profileId,
+          modelUsed,
+          aggregatedUsage,
+          apiKey,
+        ).catch((err) => log.warn("Background cost tracking failed:", err));
 
         cache.delete(CacheKeys.history(session.profileId!));
-        cache.delete(CacheKeys.usage(session.profileId!));
 
-        console.log("✓ Saved to Supabase and invalidated caches");
+        log.info("Saved to Supabase and invalidated caches");
+        trackEvent(session.profileId ?? null, "analysis_completed", {
+          repoCount: repos.length,
+          roleCount: result.roles.length,
+          sessionId,
+        });
       } catch (err) {
-        console.error("\n❌ Failed to save analysis to Supabase:", err);
+        log.error("Failed to save analysis to Supabase:", err);
       }
     }
 
@@ -611,19 +562,17 @@ Rules:
       totalTokens: aggregatedUsage.total_tokens,
     };
 
-    console.log("\n========================================");
-    console.log("ANALYSIS PIPELINE COMPLETE ✓");
-    console.log("========================================\n");
+    log.info("ANALYSIS PIPELINE COMPLETE");
 
     return NextResponse.json({ ...result, sessionId, tokenUsage });
   } catch (error) {
-    console.error("\n========================================");
-    console.error("❌ ANALYSIS PIPELINE FAILED");
-    console.error("========================================");
-    console.error("Error:", error);
-    console.error("========================================\n");
+    log.error("ANALYSIS PIPELINE FAILED:", error);
+    trackEvent(session.profileId ?? null, "analysis_failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    const message = error instanceof Error ? error.message : "Failed to analyze repositories";
     return NextResponse.json(
-      { error: "Failed to analyze repositories" },
+      { error: "Failed to analyze repositories", errorType: "PIPELINE_ERROR", message },
       { status: 500 },
     );
   }
